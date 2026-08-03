@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "name": "rouanet-ux-demo",
+  "cleanUrls": true,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

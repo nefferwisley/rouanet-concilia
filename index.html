@@ -1,0 +1,2802 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RouanetConcilia — SaaS Multi-Projetos (Arquitetura Zero-Trust & Linhagem SHA-256)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Palette 60-30-10 Rule: Refined B2B Dark Theme */
+      --bg-body: #090d1f;        /* 60% Dominant Background */
+      --bg-card: #121a36;        /* 30% Card & Layer Support */
+      --bg-card-hover: #1b264d;  /* Card Hover State */
+      --bg-input: #0b1126;       /* Form Controls & Dropdowns */
+      --border-color: #212e59;   /* Subdued Borders */
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      /* 10% Sharp Accent Palette */
+      --primary: #3b82f6;        /* Primary Interaction Accent */
+      --primary-hover: #2563eb;
+      --accent-glow: rgba(59, 130, 246, 0.25);
+
+      /* Semantic Badges (WCAG AA Compliant) */
+      --ok-bg: rgba(16, 185, 129, 0.16);
+      --ok-text: #34d399;
+      --ok-border: rgba(52, 211, 153, 0.4);
+      
+      --warning-bg: rgba(245, 158, 11, 0.16);
+      --warning-text: #fbbf24;
+      --warning-border: rgba(251, 191, 36, 0.4);
+      
+      --info-bg: rgba(59, 130, 246, 0.16);
+      --info-text: #60a5fa;
+      --info-border: rgba(96, 165, 250, 0.4);
+
+      --danger-bg: rgba(239, 68, 68, 0.16);
+      --danger-text: #f87171;
+      --danger-border: rgba(248, 113, 113, 0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+    
+    /* UX Rule: Explicit cursor:pointer for ALL interactive elements */
+    button, select, input, .tab-btn, .dropzone-upload, .close-btn, .btn-action-resolve, .page-btn, .doc-pill, .clickable-pill, .nav-project-tab { 
+      cursor: pointer; 
+    }
+    button *, select *, .tab-btn *, .nav-project-tab * { pointer-events: none; }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 16px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Container Fluido */
+    .app-container { width: 100%; max-width: 1720px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Top Navigation */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.1rem; color: #fff; letter-spacing: -0.3px; }
+    .brand-logo {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
+
+    .nav-actions { display: flex; gap: 12px; align-items: center; }
+    
+    .btn-governance-window {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.18));
+      border: 1px solid rgba(96, 165, 250, 0.4);
+      color: #93c5fd;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.825rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+    .btn-governance-window:hover { transform: translateY(-1px); background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(16, 185, 129, 0.3)); color: #fff; }
+
+    .audit-mode-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease-in-out;
+    }
+    .audit-mode-btn:hover { background: rgba(255,255,255,0.09); }
+
+    /* 1. SELETOR DE ABAS MULTI-PROJETOS NO TOPO DA APLICAÇÃO COM BOTÃO NOVO PROJETO */
+    .project-tabs-nav {
+      display: flex;
+      gap: 12px;
+      background: #0b1126;
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      border-radius: 14px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .nav-project-tab {
+      flex: 1;
+      min-width: 280px;
+      padding: 14px 20px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: rgba(18, 26, 54, 0.6);
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .nav-project-tab:hover {
+      background: var(--bg-card-hover);
+      color: #fff;
+      border-color: rgba(96, 165, 250, 0.3);
+    }
+
+    .nav-project-tab.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(18, 26, 54, 0.95));
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .tab-project-badge {
+      font-size: 0.725rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .nav-project-tab.active .tab-project-badge {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary-hover);
+    }
+
+    .btn-add-new-project {
+      max-width: 260px;
+      flex: none;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+      border-color: #3b82f6 !important;
+      color: #fff !important;
+      justify-content: center !important;
+      gap: 8px;
+    }
+    .btn-add-new-project:hover {
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Header Card PRONAC */
+    .header-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 15px 35px -15px rgba(0, 0, 0, 0.6);
+    }
+
+    .project-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .eyebrow {
+      font-size: 0.725rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .project-title h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .project-meta { display: flex; gap: 10px; margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap; }
+    .meta-item { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); }
+
+    .btn-export-salic {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+    }
+    .btn-export-salic:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45); }
+
+    /* KPI Grid Compacto */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+
+    .kpi-card {
+      background: rgba(11, 17, 38, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .kpi-card.highlight-total {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(18, 26, 54, 0.9));
+      border-color: rgba(59, 130, 246, 0.45);
+    }
+    .kpi-label { font-size: 0.725rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-val { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .kpi-sub { font-size: 0.775rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+
+    /* Progress bar */
+    .progress-bar-bg { width: 100%; background: #0b1126; height: 8px; border-radius: 10px; overflow: hidden; margin-top: 4px; border: 1px solid var(--border-color); }
+    .progress-bar-fill { height: 100%; width: 95.8%; background: linear-gradient(90deg, #10b981, #3b82f6); border-radius: 10px; transition: width 0.4s ease; }
+
+    /* PAINEL DE CONFRONTO COM DADOS PÚBLICOS DO SALIC (API MinC) */
+    .salic-comparison-card {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(18, 26, 54, 0.95));
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .salic-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(251, 191, 36, 0.25);
+      padding-bottom: 10px;
+    }
+
+    .salic-card-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .salic-api-badge {
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: #34d399;
+      font-size: 0.725rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .salic-alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .salic-alert-item {
+      background: rgba(11, 17, 38, 0.85);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      color: #fef08a;
+      line-height: 1.4;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    /* Data Grid Main Container */
+    .data-grid-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Banner Superior */
+    .table-budget-header-banner {
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.15), rgba(16, 185, 129, 0.12));
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .budget-pill-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    
+    .budget-badge-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      border-radius: 10px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .clickable-pill:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .budget-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .budget-val { font-size: 1.05rem; font-weight: 800; color: #fff; }
+
+    .section-header-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .section-header-banner h2 { font-size: 1.15rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; letter-spacing: -0.3px; }
+    .conferencia-badge { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(96, 165, 250, 0.35); color: #60a5fa; padding: 5px 12px; border-radius: 6px; font-size: 0.775rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+    .grid-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tabs {
+      display: flex;
+      background: var(--bg-input);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 6px;
+      transition: all 0.2s ease-in-out;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    
+    .tab-btn.active {
+      background: var(--bg-card-hover);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
+    .tab-btn.active-ok {
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border-color: var(--ok-border);
+    }
+    .tab-btn.active-warning {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      border-color: var(--warning-border);
+    }
+    .tab-btn.active-info {
+      background: var(--info-bg);
+      color: var(--info-text);
+      border-color: var(--info-border);
+    }
+
+    /* Select Dropdowns */
+    .filter-select {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s ease-in-out;
+    }
+    .filter-select:focus { border-color: var(--primary); }
+
+    .search-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: #fff;
+      font-size: 0.825rem;
+      outline: none;
+      width: 240px;
+      transition: all 0.2s ease-in-out;
+    }
+    .search-input:focus { border-color: var(--primary); width: 280px; }
+
+    .sha-hash-tag {
+      font-family: 'Courier New', monospace;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      margin-top: 3px;
+      display: inline-block;
+    }
+
+    /* LAYOUT DA TABELA PRINCIPAL DE COMPLIANCE */
+    .table-responsive { 
+      width: 100%; 
+      overflow-x: auto; 
+      border-radius: 12px; 
+      border: 1px solid var(--border-color);
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .table-responsive::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; table-layout: auto; }
+    
+    th {
+      background: #0b1126;
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.725rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+      vertical-align: middle;
+      font-size: 0.825rem;
+    }
+    tr:hover { background: rgba(255, 255, 255, 0.025); }
+
+    .favorecido-title { font-weight: 700; color: #fff; font-size: 0.875rem; line-height: 1.3; }
+    .sub-text { font-size: 0.725rem; color: var(--text-muted); margin-top: 1px; }
+
+    .responsavel-pf-tag {
+      font-size: 0.725rem;
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(96, 165, 250, 0.25);
+      padding: 2px 7px;
+      border-radius: 5px;
+      margin-top: 3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+
+    .val-deducao {
+      font-weight: 800;
+      color: #f87171;
+      font-size: 0.875rem;
+    }
+    .saldo-remanescente-box {
+      margin-top: 3px;
+      font-size: 0.725rem;
+      font-weight: 700;
+      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      padding: 2px 7px;
+      border-radius: 5px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .doc-rubrica {
+      font-weight: 700;
+      color: #fff;
+      font-size: 0.825rem;
+      margin-bottom: 6px;
+    }
+    .doc-pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* BLOCOS DE DOCUMENTOS CLICÁVEIS */
+    .doc-pill {
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 0.775rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+    .doc-pill:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+    
+    .doc-pill.attached {
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      color: #34d399;
+    }
+    .doc-pill.attached:hover {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: #34d399;
+      color: #fff;
+    }
+
+    .doc-pill.missing {
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      color: #fbbf24;
+    }
+    .doc-pill.missing:hover {
+      background: rgba(245, 158, 11, 0.3);
+      border-color: #fbbf24;
+      color: #fff;
+    }
+
+    .doc-checklist-indicator {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.775rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .check-complete { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
+    .check-incomplete { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
+    .check-info { background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.725rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+    .badge-ok { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
+    .badge-warning { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
+    .badge-info { background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border); }
+
+    .btn-action-resolve {
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-size: 0.775rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease-in-out;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn-action-resolve.btn-ok {
+      background: rgba(148, 163, 184, 0.12);
+      color: #cbd5e1;
+      border-color: rgba(148, 163, 184, 0.3);
+    }
+    .btn-action-resolve.btn-ok:hover { background: rgba(148, 163, 184, 0.25); color: #fff; }
+    
+    .btn-action-resolve.btn-warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border-color: rgba(251, 191, 36, 0.4);
+    }
+    .btn-action-resolve.btn-warning:hover { background: #d97706; color: #fff; }
+
+    .btn-action-resolve.btn-info {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border-color: rgba(96, 165, 250, 0.4);
+    }
+    .btn-action-resolve.btn-info:hover { background: #2563eb; color: #fff; }
+
+    /* SUMÁRIO DE FLUXO DE CAIXA EM 3 COLUNAS */
+    .fluxo-caixa-summary-card {
+      background: linear-gradient(135deg, rgba(11, 17, 38, 0.95), rgba(18, 26, 54, 0.9));
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .summary-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .summary-col.col-entradas { border-color: rgba(59, 130, 246, 0.3); background: rgba(37, 99, 235, 0.08); }
+    .summary-col.col-saidas { border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.08); }
+    .summary-col.col-saldo { border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.08); }
+
+    .summary-col-label {
+      font-size: 0.725rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+    }
+
+    .summary-col-val {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .summary-col-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .budget-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.725rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .badge-budget-ok { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
+    .badge-budget-alert { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+
+    .summary-info-line {
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      color: #93c5fd;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    /* Paginação Controls */
+    .pagination-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .pagination-info { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+    .pagination-controls { display: flex; align-items: center; gap: 6px; }
+    .page-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-size: 0.775rem;
+      font-weight: 700;
+      transition: all 0.2s ease-in-out;
+    }
+    .page-btn:hover:not(:disabled) { background: var(--bg-card-hover); border-color: var(--primary); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .page-indicator { font-size: 0.8rem; font-weight: 700; color: #fff; padding: 0 6px; }
+
+    /* MODAL DE LINHAGEM DE DADOS (/audit/lineage/{id}) */
+    .lineage-modal-backdrop {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1300;
+      padding: 20px;
+    }
+    .lineage-modal-backdrop.show { display: flex; }
+
+    .lineage-modal-window {
+      background: #121a36;
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      width: 820px;
+      max-width: 95vw;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
+    }
+
+    .lineage-chain-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .timeline-step {
+      display: flex;
+      gap: 16px;
+      background: #0b1126;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px;
+      position: relative;
+    }
+
+    .step-icon-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(96, 165, 250, 0.4);
+      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .step-title { font-size: 0.875rem; font-weight: 800; color: #fff; }
+    .step-value { font-family: 'Courier New', monospace; font-size: 0.8rem; color: #34d399; background: rgba(0,0,0,0.4); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); word-break: break-all; }
+
+    /* JANELA SEPARADA DE GOVERNANÇA */
+    .gov-modal-backdrop {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+      padding: 20px;
+    }
+    .gov-modal-backdrop.show { display: flex; }
+
+    .gov-modal-window {
+      background: #121a36;
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      width: 960px;
+      max-width: 95vw;
+      height: 88vh;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+    }
+
+    .gov-tab-bar {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .gov-tab-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      font-weight: 700;
+      transition: all 0.2s ease-in-out;
+    }
+    .gov-tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
+
+    .gov-content-area {
+      flex: 1;
+      overflow-y: auto;
+      background: #0b1126;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* VISUALIZADOR DE PDF NO NAVEGADOR */
+    .doc-viewer-backdrop {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      padding: 20px;
+    }
+    .doc-viewer-backdrop.show { display: flex; }
+
+    .doc-viewer-modal {
+      background: #121a36;
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      width: 820px;
+      max-width: 95vw;
+      height: 85vh;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+    }
+
+    .pdf-toolbar {
+      background: #0b1126;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pdf-viewport-container {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .pdf-page-paper {
+      background: #ffffff;
+      color: #1e293b;
+      width: 100%;
+      max-width: 650px;
+      min-height: 750px;
+      border-radius: 4px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      font-family: 'Times New Roman', serif;
+    }
+
+    .pdf-header-seal {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 14px;
+    }
+
+    /* Slide-Over Drawer Lateral */
+    .drawer-backdrop {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      display: none;
+      justify-content: flex-end;
+      z-index: 999;
+    }
+    .drawer-backdrop.show { display: flex; }
+
+    .drawer-panel {
+      width: 600px;
+      max-width: 95vw;
+      background: #121a36;
+      border-left: 1px solid var(--border-color);
+      height: 100%;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: -15px 0 40px rgba(0, 0, 0, 0.6);
+      animation: slideDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+
+    @keyframes slideDrawer {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .close-btn { background: rgba(255,255,255,0.05); border: none; color: var(--text-muted); border-radius: 8px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease-in-out; }
+    .close-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    .alert-guide-box {
+      background: var(--info-bg);
+      border: 1px solid var(--info-border);
+      border-radius: 10px;
+      padding: 14px;
+      color: var(--info-text);
+      font-size: 0.825rem;
+      line-height: 1.5;
+    }
+
+    .transaction-summary-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .dropzone-upload {
+      border: 2px dashed #334155;
+      border-radius: 12px;
+      padding: 28px 16px;
+      text-align: center;
+      background: rgba(11, 17, 38, 0.6);
+      transition: all 0.2s ease-in-out;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .dropzone-upload:hover { border-color: var(--primary); background: rgba(59, 130, 246, 0.05); }
+
+    .file-preview-card {
+      display: none;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 10px;
+      padding: 14px;
+      align-items: center;
+      justify-content: space-between;
+      color: #34d399;
+      font-size: 0.825rem;
+    }
+
+    /* Modal Pre-Flight SALIC */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-backdrop.show { display: flex; }
+
+    .modal-box {
+      background: #121a36;
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      width: 540px;
+      max-width: 100%;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(11, 17, 38, 0.7);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 0.825rem;
+    }
+
+    /* SVG Utility Classes */
+    .svg-icon { width: 15px; height: 15px; stroke-width: 2.2; stroke: currentColor; fill: none; flex-shrink: 0; }
+
+    /* Toast Notification */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 2000;
+    }
+
+    .toast {
+      background: #1e293b;
+      border: 1px solid #3b82f6;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      animation: toastIn 0.3s ease-out;
+    }
+
+    @keyframes toastIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <div class="app-container">
+    <!-- Top Nav -->
+    <nav class="top-nav">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg class="svg-icon" style="width:20px; height:20px;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <span>RouanetConcilia <span style="font-weight:400; color:var(--text-muted); font-size:0.825rem;">Multi-Project SaaS</span></span>
+      </div>
+      
+      <div class="nav-actions">
+        <!-- JANELA SEPARADA DE GOVERNANÇA -->
+        <button class="btn-governance-window" onclick="openGovWindow()">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          Governança, Re-Check & Database
+        </button>
+
+        <button class="audit-mode-btn" onclick="showToast('Modo Auditoria Corporativa ativado!', 'info')">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Modo Auditoria
+        </button>
+        <span style="font-size:0.825rem; color:var(--text-muted);">Controller: <strong id="headerControllerName">Assoc. Arte & Vida</strong></span>
+      </div>
+    </nav>
+
+    <!-- 1. SELETOR DE ABAS MULTI-PROJETOS NO TOPO DA APLICAÇÃO + BOTÃO INICIAR NOVO PROJETO DO ZERO -->
+    <div class="project-tabs-nav">
+      <button type="button" class="nav-project-tab active" id="projectTab-1961" onclick="switchProject('1961')">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="svg-icon" style="width:20px; height:20px; color:#60a5fa;" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+          <div>
+            <div>PRONAC 20.7457 — Projeto 1961 (Documentário)</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">Circunstância Cinematográfica Ltda • R$ 835.000,00</div>
+          </div>
+        </div>
+        <span class="tab-project-badge">184 Lançamentos</span>
+      </button>
+
+      <button type="button" class="nav-project-tab" id="projectTab-4921" onclick="switchProject('4921')">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="svg-icon" style="width:20px; height:20px; color:#34d399;" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+          <div>
+            <div>PRONAC 23-4921 — Festival Cultural de Teatro</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">Associação Cultural Arte & Vida • R$ 450.000,00</div>
+          </div>
+        </div>
+        <span class="tab-project-badge">160 Lançamentos</span>
+      </button>
+
+      <!-- BOTÃO EM DESTAQUE NO TOPO PARA INICIAR NOVO PROJETO DO ZERO -->
+      <button type="button" class="nav-project-tab btn-add-new-project" id="btnOpenNewProjModal" onclick="openNewProjectModal()">
+        <svg class="svg-icon" style="width:18px; height:18px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Iniciar Novo Projeto do Zero</span>
+      </button>
+    </div>
+
+    <!-- Header Card do Projeto Ativo -->
+    <div class="header-card">
+      <div class="project-header-top">
+        <div>
+          <div class="eyebrow" id="projectEyebrow">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+            Projeto Incentivado MinC — PRONAC 20.7457
+          </div>
+          <div class="project-title">
+            <h1 id="projectTitleHeader">PRONAC 20.7457 — Projeto 1961 (Documentário Cultural)</h1>
+          </div>
+          <div class="project-meta">
+            <span class="meta-item" id="projectMetaProponente">Proponente: Circunstância Cinematográfica Ltda</span>
+            <span class="meta-item" id="projectMetaBanco">Banco do Brasil Ag: 3210-9 C/C: 14.209-1</span>
+            <span class="meta-item" id="projectMetaFolderPath">Pasta: 01_Projetos_Isolados/PRONAC_1961_Documentario/</span>
+          </div>
+        </div>
+
+        <button class="btn-export-salic" onclick="openPreFlightModal()">
+          <svg class="svg-icon" style="width:16px; height:16px;" viewBox="0 0 24 24"><path d="M4 14.89 12 3l8 11.89M12 3v13M4 21h16"/></svg>
+          Exportar Prestação SALIC (MinC)
+        </button>
+      </div>
+
+      <!-- KPI Grid Engine (Valores Certificados diretamente da Fonte Única da Verdade do Back-End) -->
+      <div class="kpi-grid">
+        <div class="kpi-card highlight-total">
+          <div class="kpi-label">Valor Total Captado (Orçamento Inicial)</div>
+          <div class="kpi-val" id="kpiTotal">R$ 835.000,00</div>
+          <div class="kpi-sub" id="kpiTotalSub">184 movimentações processadas</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Conciliação Revisada (Dedução)</div>
+          <div class="kpi-val" style="color:#34d399;" id="kpiOk">R$ 831.743,99</div>
+          <div class="kpi-sub" id="kpiOkCount">172 itens ok - 95.8%</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Pendências & Divergências</div>
+          <div class="kpi-val" style="color:#fbbf24;" id="kpiPending">R$ 3.256,01</div>
+          <div class="kpi-sub" id="kpiPendingCount">12 itens a resolver</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Prontidão para o MinC / SALIC</div>
+          <div class="kpi-val" id="kpiPercent">95.8% Concluído</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar" style="width: 95.8%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAINEL DE CONFRONTO COM DADOS PÚBLICOS DO SALIC (API MinC) -->
+    <div class="salic-comparison-card">
+      <div class="salic-card-header">
+        <div class="salic-card-title">
+          <svg class="svg-icon" style="width:20px; height:20px; color:#fbbf24;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          CONFRONTO DE DADOS LOCAIS X DADOS PÚBLICOS DO SALIC (API Dados Abertos — api.salic.cultura.gov.br)
+        </div>
+        <div class="salic-api-badge">
+          <svg class="svg-icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          API SALIC Conectada & Sincronizada
+        </div>
+      </div>
+
+      <div class="salic-alert-list" id="salicAlertList">
+        <!-- Alertas dinâmicos injetados via JS switchProject() -->
+      </div>
+    </div>
+
+    <!-- Data Grid Main Container -->
+    <div class="data-grid-card">
+      <div class="section-header-banner">
+        <h2>
+          <svg class="svg-icon" style="width:20px; height:20px; color:var(--primary);" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          DOCUMENTOS & FAVORECIDOS — Extrato & NFes Isoladas
+        </h2>
+        <span class="conferencia-badge" id="conferenciaStatusBadge">Exibindo Todos os Lançamentos</span>
+      </div>
+
+      <div class="grid-toolbar">
+        <div class="filter-group">
+          <div class="filter-tabs">
+            <button class="tab-btn active" id="tab-ALL" onclick="handleFilterClick('ALL', event)">
+              Todos ( <span id="badge-count-all">184</span> )
+            </button>
+            <button class="tab-btn" id="tab-OK" onclick="handleFilterClick('CONCILIADO_OK', event)">
+              Conciliação Revisada ( <span id="badge-count-ok">172</span> )
+            </button>
+            <button class="tab-btn" id="tab-WARNING" onclick="handleFilterClick('ALERTA_DOCUMENTO_FALTANTE', event)">
+              Pendências ( <span id="badge-count-warning">6</span> )
+            </button>
+            <button class="tab-btn" id="tab-INFO" onclick="handleFilterClick('ALERTA_PJ_INTERMEDIARIA', event)">
+              Divergências / PJ ( <span id="badge-count-info">6</span> )
+            </button>
+          </div>
+
+          <select class="filter-select" id="docReadinessSelect" onchange="currentPage=1; renderGrid();">
+            <option value="ALL">Prontidão: Todas as Categorias</option>
+            <option value="COMPLETO">Completo (Possui todos os documentos)</option>
+            <option value="PENDENCIAS">Com Pendências (Faltam documentos)</option>
+          </select>
+
+          <select class="filter-select" id="sortSelect" onchange="currentPage=1; renderGrid();">
+            <option value="PAGAMENTO_ASC">Ordem Cronológica (Do 1º ao Último Lançamento)</option>
+            <option value="PAGAMENTO_DESC">Ordem Cronológica Inversa (Mais Recentes Primeiro)</option>
+            <option value="VALOR_DESC">Valor (Maior ➔ Menor)</option>
+          </select>
+        </div>
+
+        <input type="text" class="search-input" id="searchInput" onkeyup="currentPage=1; renderGrid();" placeholder="Buscar prestador, razão social, rubrica...">
+      </div>
+
+      <!-- DATA TABLE PRINCIPAL DE COMPLIANCE -->
+      <div class="table-responsive">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th style="width: 65px; text-align:center;"># Ordem</th>
+              <th style="width: 95px;">Data</th>
+              <th style="width: 22%;">Razão Social (PJ) & Prestador (PF)</th>
+              <th style="width: 28%;">Rubrica SALIC & Documentos (Abrir PDF)</th>
+              <th style="width: 160px;">Valor & Saldo Restante</th>
+              <th style="width: 120px;">Status Revisão</th>
+              <th style="width: 160px;">Checklist de Anexos</th>
+              <th style="width: 100px; text-align:center;">Ação Rápida</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Renderizado via JS renderGrid() -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SUMÁRIO DE FLUXO DE CAIXA EM 3 COLUNAS (SINGLE SOURCE OF TRUTH CERTIFICADA) -->
+      <div class="fluxo-caixa-summary-card">
+        <div class="summary-col col-entradas">
+          <div class="summary-col-label">(+) TOTAL CAPTADO APORTADO</div>
+          <div class="summary-col-val" style="color:#60a5fa;" id="summaryTotalCaptado">R$ 835.000,00</div>
+          <div class="summary-col-sub" id="summaryTotalCaptadoSub">Conta Captação Vinculada Banco do Brasil</div>
+        </div>
+
+        <div class="summary-col col-saidas">
+          <div class="summary-col-label">(-) TOTAL DÉBITOS EFETIVADOS</div>
+          <div class="summary-col-val" style="color:#34d399;" id="summaryTotalDebitos">R$ 831.743,99</div>
+          <div class="summary-col-sub" id="summaryTotalDebitosSub">(172 itens ok)</div>
+        </div>
+
+        <div class="summary-col col-saldo">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="summary-col-label">(=) SALDO DISPONÍVEL EM CONTA</div>
+            <span class="budget-status-badge badge-budget-ok" id="summaryBudgetStatusBadge">DENTRO DO ORÇAMENTO SALIC</span>
+          </div>
+          <div class="summary-col-val" style="color:#fbbf24;" id="summarySaldoDisponivel">R$ 3.256,01</div>
+          <div class="summary-col-sub" id="summarySaldoDisponivelSub">Saldo positivo remanescente em conta</div>
+        </div>
+      </div>
+
+      <!-- LINHA INFORMATIVA DINÂMICA DO SALDO -->
+      <div class="summary-info-line" id="summaryInfoLine">
+        O Saldo Disponível de R$ 3.256,01 é suficiente para cobrir os R$ 3.256,01 de lançamentos em estado de alerta após a devida regularização documental.
+      </div>
+
+      <!-- Paginação Controls Footer -->
+      <div class="pagination-footer">
+        <div class="pagination-info" id="paginationInfo">Exibindo 1-10 de 184 lançamentos</div>
+        <div class="pagination-controls">
+          <button class="page-btn" id="btnPrevPage" onclick="changePage(-1)">‹ Anterior</button>
+          <span class="page-indicator" id="pageIndicator">Página 1 de 19</span>
+          <button class="page-btn" id="btnNextPage" onclick="changePage(1)">Próximo ›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MODAL DE CADASTRO DE NOVO PROJETO DO ZERO (ONBOARDING / EMPTY STATE) -->
+  <div class="modal-backdrop" id="newProjectModal">
+    <div class="modal-box" style="width: 640px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:14px;">
+        <h2 style="font-size:1.15rem; color:#fff; display:flex; align-items:center; gap:8px;">
+          <svg class="svg-icon" style="width:20px; height:20px; color:var(--primary);" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Iniciar Novo Projeto do Zero (Novo PRONAC)
+        </h2>
+        <button class="close-btn" onclick="closeNewProjectModal()">✕</button>
+      </div>
+
+      <p style="font-size:0.825rem; color:var(--text-muted);">
+        Cadastre as informações básicas e crie um espaço de trabalho isolado e zerado para uma nova prestação de contas.
+      </p>
+
+      <form onsubmit="handleCreateProject(event)" style="display:flex; flex-direction:column; gap:14px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <label style="font-size:0.775rem; color:var(--text-muted); font-weight:700; display:block; margin-bottom:4px;">Número do PRONAC (SALIC / MinC)</label>
+            <input type="text" id="newPronacNum" class="filter-select" style="width:100%;" placeholder="ex: PRONAC 26-1049" required>
+          </div>
+          <div>
+            <label style="font-size:0.775rem; color:var(--text-muted); font-weight:700; display:block; margin-bottom:4px;">Nome do Projeto Cultural</label>
+            <input type="text" id="newProjectTitle" class="filter-select" style="width:100%;" placeholder="ex: Festival de Jazz e Blues" required>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <label style="font-size:0.775rem; color:var(--text-muted); font-weight:700; display:block; margin-bottom:4px;">Razão Social / Proponente</label>
+            <input type="text" id="newProponente" class="filter-select" style="width:100%;" placeholder="ex: Produções Culturais Brasil Ltda" required>
+          </div>
+          <div>
+            <label style="font-size:0.775rem; color:var(--text-muted); font-weight:700; display:block; margin-bottom:4px;">Conta Captação (Banco do Brasil)</label>
+            <input type="text" id="newBanco" class="filter-select" style="width:100%;" placeholder="ex: Ag: 4328-1 C/C: 9910-2" required>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="dropzone-upload" style="padding:16px;" onclick="showToast('Extrato bancário OFX/CSV selecionado com sucesso!', 'success')">
+            <svg class="svg-icon" style="width:24px; height:24px; color:#60a5fa;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <div style="font-size:0.8rem; font-weight:700; color:#fff;">Anexar Extrato (OFX / CSV)</div>
+            <div style="font-size:0.7rem; color:var(--text-muted);">Banco do Brasil Captação</div>
+          </div>
+
+          <div class="dropzone-upload" style="padding:16px;" onclick="showToast('Lote de NFes XML/ZIP selecionado com sucesso!', 'success')">
+            <svg class="svg-icon" style="width:24px; height:24px; color:#34d399;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div style="font-size:0.8rem; font-weight:700; color:#fff;">Anexar Notas Fiscais (XML / ZIP)</div>
+            <div style="font-size:0.7rem; color:var(--text-muted);">Lote de comprovantes SEFAZ</div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+          <button type="button" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:10px 18px; border-radius:8px; font-weight:700; font-size:0.825rem;" onclick="closeNewProjectModal()">Cancelar</button>
+          <button type="submit" class="btn-export-salic" style="padding:10px 20px;">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Criar Espaço de Trabalho Limpo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE LINHAGEM DE DADOS (/audit/lineage/{id}) -->
+  <div class="lineage-modal-backdrop" id="lineageModal">
+    <div class="lineage-modal-window">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="svg-icon" style="width:24px; height:24px; color:#38bdf8;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <div>
+            <h3 style="font-size:1.15rem; color:#fff;" id="lineageModalTitle">Linhagem de Dados & Audit Trail Criptográfico</h3>
+            <span style="font-size:0.775rem; color:#38bdf8;" id="lineageEndpointText">Endpoint API: /api/v1/audit/lineage/TX-SHA256-a8f5f1</span>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeLineageModal()">✕</button>
+      </div>
+
+      <div style="font-size:0.825rem; color:var(--text-muted); line-height:1.4;">
+        Rastreabilidade de Ponta a Ponta: A evidência abaixo vincula cryptographicamente a transação do extrato bancário do Banco do Brasil ao comprovante fiscal e ao projeto oficial cadastrado no SALIC/MinC.
+      </div>
+
+      <div class="lineage-chain-timeline" id="lineageTimeline">
+        <!-- Timeline steps injetados via JS -->
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:14px;">
+        <span style="font-size:0.75rem; color:var(--text-muted);">Assinatura Digital SHA-256 Validada • Imutabilidade Garantida</span>
+        <div style="display:flex; gap:10px;">
+          <button style="background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-main); padding:8px 16px; border-radius:8px; font-weight:700; font-size:0.8rem;" onclick="copyLineageHash()">Copiar Hash SHA-256</button>
+          <button style="background:var(--primary); border:none; color:#fff; padding:8px 18px; border-radius:8px; font-weight:700; font-size:0.8rem;" onclick="closeLineageModal()">Fechar Linhagem</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE DEMONSTRATIVO DE AUDITORIA DE SALDOS -->
+  <div class="audit-modal-backdrop" id="auditModal">
+    <div class="audit-modal-window">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="svg-icon" style="width:24px; height:24px; color:#34d399;" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <div>
+            <h3 style="font-size:1.15rem; color:#fff;" id="auditModalTitle">Demonstrativo Detalhado de Saldos</h3>
+            <span style="font-size:0.775rem; color:var(--text-muted);">Auditoria Transparente de Origem e Batimento — Projeto Ativo</span>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeAuditModal()">✕</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:16px;" id="auditModalBody">
+        <!-- Conteúdo Injetado via JS -->
+      </div>
+
+      <div style="display:flex; justify-content:flex-end;">
+        <button style="background:var(--primary); border:none; color:#fff; padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;" onclick="closeAuditModal()">Entendido / Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JANELA SEPARADA DE GOVERNANÇA -->
+  <div class="gov-modal-backdrop" id="govWindowModal">
+    <div class="gov-modal-window">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="svg-icon" style="width:22px; height:22px; color:var(--primary);" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <div>
+            <h2 style="font-size:1.15rem; color:#fff;">Centro de Governança, Re-Check & Database do Projeto</h2>
+            <p style="font-size:0.775rem; color:var(--text-muted);" id="govModalSubtext">01_Projetos_Isolados — Matriz de Conformidade & Sanitização (Nível de Confiança ≥ 95.0%)</p>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeGovWindow()">✕</button>
+      </div>
+
+      <div class="gov-tab-bar">
+        <button class="gov-tab-btn active" id="govTab-1" onclick="switchGovTab(1)">Ficha Cadastral & Metas</button>
+        <button class="gov-tab-btn" id="govTab-2" onclick="switchGovTab(2)">Motor Re-Check & Score Confiança (≥95%)</button>
+        <button class="gov-tab-btn" id="govTab-3" onclick="switchGovTab(3)">Higienização de Nomes de Arquivos</button>
+        <button class="gov-tab-btn" id="govTab-4" onclick="switchGovTab(4)">Base de Dados Markdown (.md)</button>
+      </div>
+
+      <div class="gov-content-area" id="govContentArea">
+        <!-- Conteúdo Injetado via JS -->
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:12px;">
+        <span style="font-size:0.775rem; color:var(--text-muted);" id="govFooterFolderPath">SHA-256 Validated • Pasta em disco: <code>01_Projetos_Isolados/PRONAC_1961_Documentario/</code></span>
+        <button style="background:var(--primary); border:none; color:#fff; padding:8px 18px; border-radius:8px; font-weight:700; cursor:pointer;" onclick="closeGovWindow()">Fechar Janela</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISUALIZADOR DE PDF NO NAVEGADOR -->
+  <div class="doc-viewer-backdrop" id="docViewerModal">
+    <div class="doc-viewer-modal">
+      <div class="pdf-toolbar">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="svg-icon" style="width:20px; height:20px; color:#34d399;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <div>
+            <h3 style="font-size:1rem; color:#fff;" id="docViewerTitle">1. Mônica Guimarães - Produtora.pdf</h3>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button style="background:rgba(16, 185, 129, 0.2); border:1px solid rgba(52, 211, 153, 0.4); color:#34d399; padding:6px 12px; border-radius:6px; font-weight:700; font-size:0.775rem; display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="copiarPronacParaBusca()" id="btnCopiarPronac" title="Copia o número do PRONAC para a área de transferência">
+            <svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            📋 Copiar PRONAC
+          </button>
+
+          <button style="background:rgba(16, 185, 129, 0.2); border:1px solid rgba(52, 211, 153, 0.4); color:#34d399; padding:6px 12px; border-radius:6px; font-weight:700; font-size:0.775rem; display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="openSalicPublicPortalLink()" title="Abre o portal SalicComparar. Cole o PRONAC copiado para buscar o projeto.">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            🏙️ Buscar no SALIC
+          </button>
+
+          <button style="background:rgba(59, 130, 246, 0.2); border:1px solid rgba(96, 165, 250, 0.4); color:#60a5fa; padding:6px 12px; border-radius:6px; font-weight:700; font-size:0.775rem; display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="openPdfInNewTab()">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Abrir PDF em Nova Aba
+          </button>
+        </div>
+      </div>
+
+      <div class="pdf-viewport-container">
+        <div class="pdf-page-paper">
+          <div class="pdf-header-seal">
+            <div>
+              <div style="font-size:0.875rem; font-weight:bold; color:#0f172a;">MINISTÉRIO DA CULTURA — SALIC</div>
+              <div style="font-size:0.75rem; color:#475569;" id="pdfPaperPronacHeader">Prestação de Contas Eletrônica — PRONAC 20.7457</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:0.75rem; font-weight:bold; color:#10b981;">DOCUMENTO HOMOLOGADO</div>
+              <div style="font-size:0.7rem; color:#64748b;" id="pdfSealDate">04/11/2026 10:15</div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+            <h2 style="font-size:1.15rem; color:#0f172a; border-bottom:1px solid #cbd5e1; padding-bottom:6px;" id="pdfPaperTitle">COMPROVANTE DE PRESTAÇÃO DE SERVIÇOS FISCAL</h2>
+            
+            <table style="width:100%; border-collapse:collapse; font-size:0.8rem; font-family:sans-serif; margin-top:6px;">
+              <tr>
+                <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Proponente / Razão Social:</td>
+                <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a;" id="pdfPaperRazao">Circunstância Cinematográfica Ltda</td>
+              </tr>
+              <tr>
+                <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Prestador de Serviço (PF):</td>
+                <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a;" id="pdfPaperPrestador">Mónica Guimarães</td>
+              </tr>
+              <tr>
+                <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Rubrica Orçamentária:</td>
+                <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a;" id="pdfPaperRubrica">1.5.1 — Produtora Executiva</td>
+              </tr>
+              <tr>
+                <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Valor Auditado:<            <!-- LINK DO DOCUMENTO PÚBLICO NO PORTAL OFICIAL DO SALIC/MinC -->
+            <div style="font-size:0.775rem; color:#1e293b; margin-top:14px; font-family:sans-serif; line-height:1.6; background:#f0fdf4; border:1px solid #86efac; padding:12px; border-radius:6px;">
+              <strong>🏙️ Verificação no Portal Oficial (SALIC / MinC):</strong><br>
+              <span style="font-size:0.75rem; color:#166534;">
+                O portal SalicComparar não permite links diretos para documentos específicos.<br>
+                Para localizar este comprovante:
+              </span>
+              <ol style="font-size:0.75rem; color:#166534; padding-left:18px; margin-top:6px;">
+                <li>Clique em <strong>📋 Copiar PRONAC</strong> (botão acima)</li>
+                <li>Clique em <strong>🏙️ Buscar no SALIC</strong> para abrir o portal</li>
+                <li>Cole o PRONAC copiado no campo de busca do portal</li>
+              </ol>
+              <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <code id="pdfPaperSalicLink" style="background:#dcfce7; border:1px solid #86efac; padding:4px 10px; border-radius:4px; font-size:0.8rem; color:#166534; font-family:monospace;">PRONAC 20.7457</code>
+                <button style="background:#0284c7; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" onclick="copiarPronacParaBusca()">
+                  📋 Copiar PRONAC
+                </button>
+                <button style="background:#16a34a; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" onclick="openSalicPublicPortalLink()">
+                  Abrir Portal SALIC ➜
+                </button>
+              </div>
+            </div>:6px; font-size:0.75rem; font-weight:bold; cursor:pointer; white-space:nowrap;" onclick="openSalicPublicPortalLink()">
+                Abrir no MinC ➔
+              </button>
+            </div>
+
+            <div style="font-size:0.775rem; color:#334155; margin-top:6px; font-family:sans-serif; line-height:1.5; background:#f8fafc; border:1px solid #e2e8f0; padding:12px; border-radius:4px;">
+              <strong>Termo de Autenticidade Digital:</strong> Declaramos para os devidos fins de direito junto ao Ministério da Cultura que os serviços descritos neste documento foram prestados de forma integral, em conformidade com as exigências da Lei Rouanet e comprovados mediante extrato bancário da conta captação vinculada.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:12px;">
+        <button style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;" onclick="closeDocViewer()">Fechar Leitor PDF</button>
+        <button class="btn-export-salic" onclick="downloadDocFile()">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Baixar Cópia em PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide-Over Drawer Lateral -->
+  <div class="drawer-backdrop" id="drawerBackdrop">
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div>
+          <h2 id="drawerTitle" style="font-size:1.15rem; color:#fff;">Sessão DOCUMENTOS — Projeto Ativo</h2>
+          <p id="drawerTxId" style="font-size:0.8rem; color:var(--text-muted);">Lançamento Extrato TX-1961-1</p>
+        </div>
+        <button class="close-btn" onclick="closeDrawer()">✕</button>
+      </div>
+
+      <div class="alert-guide-box" id="drawerGuideBox">
+        <strong>Audit Trail & Check-list Documental SALIC:</strong><br>
+        <span id="drawerGuideText">Verifique a lista de anexos necessários para validar este lançamento.</span>
+      </div>
+
+      <div class="transaction-summary-box">
+        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Prestador de Serviço (PF) & Razão Social (PJ)</span>
+        <div style="font-size:1.05rem; font-weight:800; color:#fff;" id="drawerFavorecido">Mónica Guimarães</div>
+        <div style="font-size:0.825rem; color:#93c5fd; margin-top:2px;" id="drawerRazaoSocial">CIRCUNSTANCIA CINEMATOGRAF.</div>
+        <div style="font-size:1.05rem; color:#f87171; font-weight:800; margin-top:6px;" id="drawerValor">- R$ 11.000,00</div>
+        <div style="font-size:0.775rem; color:#60a5fa; margin-top:4px;" id="drawerSaldoSubtext">Saldo do Orçamento após esta dedução: R$ 824.000,00</div>
+      </div>
+
+      <div style="background:var(--bg-input); padding:14px; border-radius:10px; border:1px solid var(--border-color);">
+        <div style="font-size:0.775rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-bottom:8px;">Checklist Documental MinC</div>
+        <div style="display:flex; flex-direction:column; gap:6px;" id="drawerDocList">
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:6px;">
+            <span>Comprovante Bancário</span>
+            <span style="color:#34d399; font-weight:700; font-size:0.775rem;">Anexado</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:6px;" id="drawerMissingDocRow">
+            <span>Recibo Fiscal / NF-e / RPA</span>
+            <span style="color:#fbbf24; font-weight:700; font-size:0.775rem;" id="drawerMissingDocStatus">Pendente Upload</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropzone-upload" id="dropzoneBox" onclick="simulateUpload()">
+        <svg class="svg-icon" style="width:32px; height:32px; color:var(--primary);" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div style="font-weight:700; color:#fff; font-size:0.9rem;" id="dropzoneMainText">Clique para selecionar ou arraste o documento pendente aqui</div>
+        <div style="font-size:0.775rem; color:var(--text-muted);">Sanitização automática de caracteres ativada (PDF, XML, PNG, JPG)</div>
+      </div>
+
+      <div class="file-preview-card" id="filePreviewCard">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg class="svg-icon" style="width:20px; height:20px;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div>
+            <div style="font-weight:700; color:#fff;" id="fileNameText">Comprovante_Validado.pdf</div>
+            <div style="font-size:0.725rem; color:var(--text-muted);">Sanitizado & OCR Matched 99.4% • Autenticidade Confirmada</div>
+          </div>
+        </div>
+        <button style="background:none; border:none; color:#f87171; cursor:pointer;" onclick="removeFile(event)">✕</button>
+      </div>
+
+      <div style="margin-top:auto; display:flex; gap:10px;">
+        <button class="btn-export-salic" style="flex:1; justify-content:center; background:linear-gradient(135deg, #2563eb, #1d4ed8);" onclick="confirmResolution()">
+          Aprovar & Marcar Todos os Docs como Anexados
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pre-Flight SALIC -->
+  <div class="modal-backdrop" id="preFlightModal">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="font-size:1.15rem; color:#fff; display:flex; align-items:center; gap:8px;" id="preFlightModalTitle">
+          Pre-Flight Check SALIC — PRONAC 20.7457
+        </h2>
+        <button class="close-btn" onclick="closePreFlightModal()">✕</button>
+      </div>
+
+      <p style="font-size:0.825rem; color:var(--text-muted);" id="preFlightModalSub">Validação automática dos requisitos do MinC para a Circunstância Cinematográfica Ltda.</p>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div class="check-item" id="preFlightBankCheck">Extrato Banco do Brasil 100% conciliado</div>
+        <div class="check-item"><span id="salicCountText">172 de 184 movimentações validadas e arquivadas</span></div>
+        <div class="check-item">Nível médio de confiança de cruzamento de dados: 98.7% (Requisito ≥ 95%)</div>
+        <div class="check-item" id="salicWarningBox" style="border-color:rgba(251, 191, 36, 0.35); background:rgba(245, 158, 11, 0.14);"><span id="salicWarningText">12 pendências documentais restantes (R$ 3.256,01 a regularizar)</span></div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <button style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:8px 16px; border-radius:8px; cursor:pointer;" onclick="closePreFlightModal()">Cancelar</button>
+        <button class="btn-export-salic" onclick="downloadSalicPackage()">
+          Baixar Pacote ZIP SALIC
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------------------
+    // ARQUITETURA ZERO-TRUST & SINGLE SOURCE OF TRUTH (FONTE ÚNICA DA VERDADE)
+    // -------------------------------------------------------------------------
+    const projectsData = {
+      '1961': {
+        key: '1961',
+        pronac: "PRONAC 20.7457",
+        title: "PRONAC 20.7457 — Projeto 1961 (Documentário Cultural)",
+        proponente: "Circunstância Cinematográfica Ltda",
+        cnpj: "12.345.678/0001-90",
+        banco: "Banco do Brasil Ag: 3210-9 C/C: 14.209-1",
+        folderPath: "01_Projetos_Isolados/PRONAC_1961_Documentario/",
+        mdPath: "01_Projetos_Isolados/PRONAC_1961_Documentario/database/DATABASE_PRONAC_1961.md",
+        controllerName: "Assoc. Arte & Vida",
+        metrics: {
+          rawTotal: 835000.00,
+          total: "R$ 835.000,00",
+          totalCount: 184,
+          rawConciliados: 831743.99,
+          conciliados: "R$ 831.743,99",
+          conciliadosCount: 172,
+          rawPendentes: 3256.01,
+          pendentes: "R$ 3.256,01",
+          pendentesCount: 12,
+          percent: "95.8%"
+        },
+        salicAlerts: [
+          "⚠️ Item 15 (Gerenciamento) — Valor em extrato (R$ 19.550,00) difere do valor aprovado no SALIC (R$ 19.500,00). Divergência de R$ 50,00.",
+          "⚠️ Item 23 (Controller - Júlia Sousa) — Pagamento no extrato (R$ 4.900,00) sem NFe/recibo equivalente no SALIC."
+        ],
+        items: []
+      },
+      '4921': {
+        key: '4921',
+        pronac: "PRONAC 23-4921",
+        title: "PRONAC 23-4921 — Festival Cultural de Teatro",
+        proponente: "Associação Cultural Arte & Vida",
+        cnpj: "45.678.901/0001-23",
+        banco: "Banco do Brasil Ag: 4102-1 C/C: 88.301-4",
+        folderPath: "01_Projetos_Isolados/PRONAC_23-4921_Festival_Teatro/",
+        mdPath: "01_Projetos_Isolados/PRONAC_23-4921_Festival_Teatro/database/DATABASE_PRONAC_23_4921.md",
+        controllerName: "Assoc. Arte & Vida",
+        metrics: {
+          rawTotal: 450000.00,
+          total: "R$ 450.000,00",
+          totalCount: 160,
+          rawConciliados: 396000.00,
+          conciliados: "R$ 396.000,00",
+          conciliadosCount: 142,
+          rawPendentes: 54000.00,
+          pendentes: "R$ 54.000,00",
+          pendentesCount: 18,
+          percent: "88.0%"
+        },
+        salicAlerts: [
+          "⚠️ Item 18/05/2026 (Agência Cultural SP) — NF-e #1029 emitida por PJ intermediária sem anexo de contrato no SALIC."
+        ],
+        items: []
+      }
+    };
+
+    // Popula MASSA DE DADOS DO PROJETO 1961 (184 itens)
+    (function initItems1961() {
+      const proj = projectsData['1961'];
+      const realRows1961 = [
+        { prestador: "Mónica Guimarães", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 11000.00, item: "Produtora Executiva", rubrica: "1.5.1", docLink: "1. Mônica Guimarães - Produtora.pdf", confidence: 99.8, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 5000.00, item: "Obras pré-existentes", rubrica: "1.2.1", docLink: "4. Amir Labaki - Roteirista.pdf", confidence: 99.5, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 20000.00, item: "Diretor", rubrica: "1.4.1", docLink: "3. Amir Labaki - Diretor.pdf", confidence: 99.7, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 30000.00, item: "Roteirista", rubrica: "1.1.1", docLink: "2. Amir Labaki - Obras.pdf", confidence: 99.6, missingText: null },
+        { prestador: "Felipe Frico Guimarães", razao: "FELIPE GUIMARÃES ROSA", isHighlight: true, data: "10/11/2026", rawDate: "2026-11-10", valor: 1200.00, item: "Diretor de Fotografia", rubrica: "3.5.1", docLink: "5. Frico Guimarães - Dir. Foto.pdf", confidence: 98.9, missingText: null },
+        { prestador: "Luis Felipe Labaki", razao: "LUIS FELIPE LABAKI", isHighlight: true, data: "10/11/2026", rawDate: "2026-11-10", valor: 1200.00, item: "Som Direto", rubrica: "3.6.1", docLink: "6. Luis Felipe Labaki - Som.pdf", confidence: 99.1, missingText: null },
+        { prestador: "Luis Felipe Cipullo", razao: "LUIS FELIPE MONTE CIPULLO", isHighlight: true, data: "21/11/2026", rawDate: "2026-11-21", valor: 800.00, item: "Assistente de Fotografia", rubrica: "3.6.2", docLink: "7. Luis Cipullo (1961).pdf", confidence: 98.7, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "28/11/2026", rawDate: "2026-11-28", valor: 20000.00, item: "Diretor", rubrica: "2.1.1", docLink: "8. Amir Labaki - Diretor.pdf", confidence: 99.4, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "12/12/2026", rawDate: "2026-12-12", valor: 30000.00, item: "Diretor", rubrica: "3.1.1", docLink: "9. Amir Labaki - Diretor.pdf", confidence: 99.6, missingText: null },
+        { prestador: "Júlia Sousa", razao: "JÚLIA SOUSA AUDITORIA ME", isHighlight: true, data: "15/12/2026", rawDate: "2026-12-15", valor: 4900.00, item: "Controller do Projeto", rubrica: "1.6.1", docLink: "10_Julia_Sousa_Controller.pdf", confidence: 91.5, missingText: "Falta: NF-e/Recibo nº 402 no SALIC" },
+        { prestador: "Eduardo Gerenciamento", razao: "GERENCIAMENTO CULTURAL LTDA", isHighlight: false, data: "18/12/2026", rawDate: "2026-12-18", valor: 19550.00, item: "Gerenciamento Geral", rubrica: "1.7.0", docLink: "15_Gerenciamento_Cultural.pdf", confidence: 92.0, missingText: "Falta: Ajuste de R$ 50,00 no SALIC" }
+      ];
+
+      realRows1961.forEach((r, idx) => {
+        const isDivergent = r.confidence < 95.0;
+        const shaShort = `a8f${(idx + 10).toString(16)}f${(idx * 7).toString(16)}`;
+        const shaFull = `${shaShort}c9d2e3b4a567890123456789abcdef0123456789abcdef0123456789ab`;
+        
+        proj.items.push({
+          id: `TX-SHA256-${shaShort}`,
+          fullHash: shaFull,
+          pixProtocol: `E00000000202611041015${shaShort.toUpperCase()}`,
+          sisbbProtocol: `SISBB-BB-2026-${8849200 + idx}`,
+          nfeChave: `352611123456780001905500100000${8800 + idx}1001234567`,
+          salicStatus: isDivergent ? "ALERTA_DIVERGENCIA_MINC" : "HOMOLOGADO_MINC",
+          prestador: r.prestador,
+          razao: r.razao,
+          isHighlight: r.isHighlight,
+          data: r.data,
+          rawDate: r.rawDate,
+          valor: r.valor.toFixed(2),
+          item: r.item,
+          rubrica: r.rubrica,
+          confidence: r.confidence,
+          recheckStatus: isDivergent ? "PENDENTE_RECHECK" : "VERIFICADO_DUPLO",
+          status: isDivergent ? "ALERTA_DOCUMENTO_FALTANTE" : "CONCILIADO_OK",
+          readiness: isDivergent ? "PENDENCIAS" : "COMPLETO",
+          docs: [{ name: r.docLink, ok: !isDivergent }, { name: "Comprovante_BB.pdf", ok: true }],
+          checklist: isDivergent ? "Incompleto (1/2 docs)" : "Completo (2/2 docs)",
+          missingText: r.missingText || (isDivergent ? "Falta: Recibo Fiscal equivalente" : null),
+          checklistSub: isDivergent ? `⚠️ ${r.missingText}` : `Concluído em: ${r.data}`,
+          guide: "Lançamento auditado do Projeto 1961."
+        });
+      });
+
+      for (let i = 12; i <= 184; i++) {
+        const dayNum = Math.min(28, Math.floor(((i - 1) / 184) * 28) + 1);
+        const dayStr = dayNum.toString().padStart(2, '0');
+        const dateIso = `2026-11-${dayStr}`;
+        const dateDisplay = `${dayStr}/11/2026`;
+        const shaShort = `b${(i + 100).toString(16)}c${(i * 3).toString(16)}`;
+        const shaFull = `${shaShort}77a2e3b4a567890123456789abcdef0123456789abcdef0123456789ab`;
+
+        if (i <= 172) {
+          const isAlfa = i % 2 === 0;
+          proj.items.push({
+            id: `TX-SHA256-${shaShort}`,
+            fullHash: shaFull,
+            pixProtocol: `E00000000202611${dayStr}1015${shaShort.toUpperCase()}`,
+            sisbbProtocol: `SISBB-BB-2026-${9900000 + i}`,
+            nfeChave: `352611123456780001905500100000${9900 + i}1001234567`,
+            salicStatus: "HOMOLOGADO_MINC",
+            prestador: isAlfa ? "Carlos Eduardo Silva" : "Mariana Souza Lima",
+            razao: isAlfa ? "GRAFICA E EDITORA ALFA LTDA" : "TECH SOUND PRODUCOES LTDA",
+            isHighlight: false,
+            data: dateDisplay,
+            rawDate: dateIso,
+            valor: (4500 + (i * 12)).toFixed(2),
+            item: isAlfa ? "Divulgação & Material Gráfico" : "Locação de Som e Luz",
+            rubrica: isAlfa ? "5.1.0" : "3.1.2",
+            confidence: parseFloat((97.5 + (i % 25) * 0.1).toFixed(1)),
+            recheckStatus: "VERIFICADO_DUPLO",
+            status: "CONCILIADO_OK",
+            readiness: "COMPLETO",
+            docs: [{ name: `NF-e #${8800 + i}.xml`, ok: true }, { name: "Comprovante_PIX.pdf", ok: true }],
+            checklist: "Completo (2/2 docs)",
+            missingText: null,
+            checklistSub: `Concluído em: ${dateDisplay}`,
+            guide: "Lançamento conciliado do Documentário."
+          });
+        } else if (i <= 178) {
+          proj.items.push({
+            id: `TX-SHA256-${shaShort}`,
+            fullHash: shaFull,
+            pixProtocol: `E00000000202611${dayStr}1015${shaShort.toUpperCase()}`,
+            sisbbProtocol: `SISBB-BB-2026-${9900000 + i}`,
+            nfeChave: `352611123456780001905500100000${9900 + i}1001234567`,
+            salicStatus: "ALERTA_RECIBO_FALTANTE",
+            prestador: "Dr. Henrique Alencar",
+            razao: "TEATRO MUNICIPAL / PREFEITURA",
+            isHighlight: false,
+            data: dateDisplay,
+            rawDate: dateIso,
+            valor: (500).toFixed(2),
+            item: "Taxa de Uso de Espaço",
+            rubrica: "2.1.0",
+            confidence: 91.2,
+            recheckStatus: "PENDENTE_RECHECK",
+            status: "ALERTA_DOCUMENTO_FALTANTE",
+            readiness: "PENDENCIAS",
+            docs: [{ name: "Comprovante_Bancario.pdf", ok: true }, { name: "Recibo_Oficial_Faltante.pdf", ok: false }],
+            checklist: "Incompleto (1/2 docs)",
+            missingText: "Falta: Recibo Oficial nº 402",
+            checklistSub: "⚠️ Falta: Recibo Oficial nº 402",
+            guide: "Pendente recibo oficial."
+          });
+        } else {
+          proj.items.push({
+            id: `TX-SHA256-${shaShort}`,
+            fullHash: shaFull,
+            pixProtocol: `E00000000202611${dayStr}1015${shaShort.toUpperCase()}`,
+            sisbbProtocol: `SISBB-BB-2026-${9900000 + i}`,
+            nfeChave: `352611123456780001905500100000${9900 + i}1001234567`,
+            salicStatus: "ALERTA_CONTRATO_INTERMEDIACAO",
+            prestador: "Lucas Martins",
+            razao: "AGÊNCIA CULTURAL SP LTDA",
+            isHighlight: false,
+            data: dateDisplay,
+            rawDate: dateIso,
+            valor: (500).toFixed(2),
+            item: "Agenciamento Cultural",
+            rubrica: "1.1.0",
+            confidence: 93.8,
+            recheckStatus: "PENDENTE_RECHECK",
+            status: "ALERTA_PJ_INTERMEDIARIA",
+            readiness: "PENDENCIAS",
+            docs: [{ name: `NF-e #${1020 + i}.xml`, ok: true }, { name: "Contrato_Intermediacao.pdf", ok: false }],
+            checklist: "Parcial (2/3 docs)",
+            missingText: "Falta: Contrato de Intermediação",
+            checklistSub: "⚠️ Falta: Contrato de Intermediação",
+            guide: "PJ intermediária agenciadora."
+          });
+        }
+      }
+    })();
+
+    // Popula MASSA DE DADOS DO PRONAC 23-4921 (160 itens)
+    (function initItems4921() {
+      const proj = projectsData['4921'];
+      const realRows4921 = [
+        { prestador: "Agência Cultural SP", razao: "AGÊNCIA CULTURAL SP LTDA", isHighlight: true, data: "18/05/2026", rawDate: "2026-05-18", valor: 35000.00, item: "Produção Teatral Agenciada", rubrica: "1.1.0", docLink: "NF-e_1029_Agencia_Cultural.xml", confidence: 91.0, missingText: "Falta: Contrato de Intermediação no SALIC" },
+        { prestador: "Dra. Renata Silveira", razao: "ASSOCIAÇÃO ARTE & VIDA", isHighlight: false, data: "05/01/2026", rawDate: "2026-01-05", valor: 15000.00, item: "Direção Geral Teatro", rubrica: "1.1.1", docLink: "1_Renata_Silveira_Direcao.pdf", confidence: 99.9, missingText: null },
+        { prestador: "Marcos Vinícius Mendes", razao: "PALCO & LUZ PRODUÇÕES LTDA", isHighlight: false, data: "08/01/2026", rawDate: "2026-01-08", valor: 45000.00, item: "Estrutura de Cenografia & Luz", rubrica: "3.1.2", docLink: "2_Palco_Luz_NF880.xml", confidence: 99.7, missingText: null },
+        { prestador: "Camila Albuquerque", razao: "CENOGRAFIA CULTURAL SP ME", isHighlight: false, data: "12/01/2026", rawDate: "2026-01-12", valor: 28000.00, item: "Adaptação de Figurino", rubrica: "3.2.1", docLink: "3_Camila_Albuquerque_Cenario.pdf", confidence: 99.4, missingText: null },
+        { prestador: "Eduardo Fontes", razao: "GRAFICA E EDITORA EXPRESS LTDA", isHighlight: false, data: "18/01/2026", rawDate: "2026-01-18", valor: 18500.00, item: "Catálogos do Festival", rubrica: "5.1.0", docLink: "4_Grafica_Express_NF902.xml", confidence: 99.8, missingText: null }
+      ];
+
+      realRows4921.forEach((r, idx) => {
+        const isDivergent = r.confidence < 95.0;
+        const shaShort = `c4921${(idx + 10).toString(16)}`;
+        const shaFull = `${shaShort}f882e3b4a567890123456789abcdef0123456789abcdef0123456789ab`;
+
+        proj.items.push({
+          id: `TX-SHA256-${shaShort}`,
+          fullHash: shaFull,
+          pixProtocol: `E00000000202605181015${shaShort.toUpperCase()}`,
+          sisbbProtocol: `SISBB-BB-2026-${7749200 + idx}`,
+          nfeChave: `352605456789010001235500100000${1020 + idx}1009876543`,
+          salicStatus: isDivergent ? "ALERTA_PJ_INTERMEDIARIA" : "HOMOLOGADO_MINC",
+          prestador: r.prestador,
+          razao: r.razao,
+          isHighlight: r.isHighlight,
+          data: r.data,
+          rawDate: r.rawDate,
+          valor: r.valor.toFixed(2),
+          item: r.item,
+          rubrica: r.rubrica,
+          confidence: r.confidence,
+          recheckStatus: isDivergent ? "PENDENTE_RECHECK" : "VERIFICADO_DUPLO",
+          status: isDivergent ? "ALERTA_PJ_INTERMEDIARIA" : "CONCILIADO_OK",
+          readiness: isDivergent ? "PENDENCIAS" : "COMPLETO",
+          docs: [{ name: r.docLink, ok: true }, { name: "Comprovante_BB.pdf", ok: true }, { name: "Contrato_Intermediacao.pdf", ok: !isDivergent }],
+          checklist: isDivergent ? "Parcial (2/3 docs)" : "Completo (2/2 docs)",
+          missingText: r.missingText || null,
+          checklistSub: isDivergent ? `⚠️ ${r.missingText}` : `Concluído em: ${r.data}`,
+          guide: "Lançamento auditado do Festival de Teatro."
+        });
+      });
+
+      for (let i = 6; i <= 160; i++) {
+        const dayNum = Math.min(28, Math.floor(((i - 1) / 160) * 28) + 1);
+        const dayStr = dayNum.toString().padStart(2, '0');
+        const dateIso = `2026-02-${dayStr}`;
+        const dateDisplay = `${dayStr}/02/2026`;
+        const shaShort = `d4921${(i + 50).toString(16)}`;
+        const shaFull = `${shaShort}e992e3b4a567890123456789abcdef0123456789abcdef0123456789ab`;
+
+        if (i <= 142) {
+          proj.items.push({
+            id: `TX-SHA256-${shaShort}`,
+            fullHash: shaFull,
+            pixProtocol: `E00000000202602${dayStr}1015${shaShort.toUpperCase()}`,
+            sisbbProtocol: `SISBB-BB-2026-${7749200 + i}`,
+            nfeChave: `352602456789010001235500100000${2000 + i}1009876543`,
+            salicStatus: "HOMOLOGADO_MINC",
+            prestador: (i % 2 === 0) ? "Fernanda Lima" : "Gabriel Torres",
+            razao: (i % 2 === 0) ? "TEATRO NACIONAL PRODUÇÕES" : "SOM & PALCO ILUMINAÇÃO",
+            isHighlight: false,
+            data: dateDisplay,
+            rawDate: dateIso,
+            valor: (2000 + (i * 15)).toFixed(2),
+            item: "Apresentação Teatral & Som",
+            rubrica: "3.1.0",
+            confidence: 99.2,
+            recheckStatus: "VERIFICADO_DUPLO",
+            status: "CONCILIADO_OK",
+            readiness: "COMPLETO",
+            docs: [{ name: `NFe_Teatro_${i}.xml`, ok: true }, { name: "Comprovante_PIX.pdf", ok: true }],
+            checklist: "Completo (2/2 docs)",
+            missingText: null,
+            checklistSub: `Concluído em: ${dateDisplay}`,
+            guide: "Lançamento conciliado do Festival de Teatro."
+          });
+        } else {
+          proj.items.push({
+            id: `TX-SHA256-${shaShort}`,
+            fullHash: shaFull,
+            pixProtocol: `E00000000202602${dayStr}1015${shaShort.toUpperCase()}`,
+            sisbbProtocol: `SISBB-BB-2026-${7749200 + i}`,
+            nfeChave: `352602456789010001235500100000${2000 + i}1009876543`,
+            salicStatus: "ALERTA_CTE_FISCAL_FALTANTE",
+            prestador: "Mariana Costa",
+            razao: "TRANSPORTE DE CENÁRIOS ME",
+            isHighlight: false,
+            data: dateDisplay,
+            rawDate: dateIso,
+            valor: (3000).toFixed(2),
+            item: "Frete de Iluminação e Palco",
+            rubrica: "3.4.0",
+            confidence: 92.1,
+            recheckStatus: "PENDENTE_RECHECK",
+            status: "ALERTA_DOCUMENTO_FALTANTE",
+            readiness: "PENDENCIAS",
+            docs: [{ name: "Comprovante_Frete.pdf", ok: true }, { name: "CT-e_Faltante.xml", ok: false }],
+            checklist: "Incompleto (1/2 docs)",
+            missingText: "Falta: CT-e fiscal de transporte",
+            checklistSub: "⚠️ Falta: CT-e fiscal de transporte",
+            guide: "Falta CT-e fiscal de transporte."
+          });
+        }
+      }
+    })();
+
+    let currentProjectKey = '1961';
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let activeTxId = null;
+    let activeItemLineage = null;
+
+    function getActiveProject() {
+      return projectsData[currentProjectKey];
+    }
+
+    function computeRunningBalances(proj) {
+      if (!proj.items || proj.items.length === 0) return;
+      proj.items.sort((a, b) => new Date(a.rawDate || a.data) - new Date(b.rawDate || b.data));
+      let currentBalance = proj.metrics.rawTotal;
+
+      proj.items.forEach((item, index) => {
+        item.ordem = index + 1;
+        currentBalance -= parseFloat(item.valor);
+        item.saldoRestante = currentBalance;
+      });
+    }
+
+    // Toast Notification
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // 1 & 3. ISOLAMENTO ESTRITO DE PROJETOS POR ABAS NO TOPO
+    function switchProject(projectKey) {
+      currentProjectKey = projectKey;
+      currentPage = 1;
+
+      // Alterna o estado ativo de todas as abas
+      const allTabs = document.querySelectorAll('.nav-project-tab');
+      allTabs.forEach(tab => {
+        if (tab.id === `projectTab-${projectKey}`) tab.classList.add('active');
+        else if (tab.id !== 'btnOpenNewProjModal') tab.classList.remove('active');
+      });
+
+      const proj = getActiveProject();
+      computeRunningBalances(proj);
+
+      document.getElementById('projectTitleHeader').innerText = proj.title;
+      document.getElementById('projectEyebrow').innerHTML = `
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+        Projeto Incentivado MinC — ${proj.pronac}`;
+
+      document.getElementById('projectMetaProponente').innerText = `Proponente: ${proj.proponente}`;
+      document.getElementById('projectMetaBanco').innerText = proj.banco;
+      document.getElementById('projectMetaFolderPath').innerText = `Pasta: ${proj.folderPath}`;
+      document.getElementById('headerControllerName').innerText = proj.controllerName;
+
+      // Valores fornecidos diretamente pelo Back-End JSON (Single Source of Truth)
+      document.getElementById('kpiTotal').innerText = proj.metrics.total;
+      document.getElementById('kpiTotalSub').innerText = `${proj.metrics.totalCount} movimentações processadas`;
+      document.getElementById('kpiOk').innerText = proj.metrics.conciliados;
+      document.getElementById('kpiOkCount').innerText = `${proj.metrics.conciliadosCount} itens ok - ${proj.metrics.percent}`;
+      document.getElementById('kpiPending').innerText = proj.metrics.pendentes;
+      document.getElementById('kpiPendingCount').innerText = `${proj.metrics.pendentesCount} itens a resolver`;
+      document.getElementById('kpiPercent').innerText = `${proj.metrics.percent} Concluído`;
+      document.getElementById('progressBar').style.width = proj.metrics.percent;
+
+      // PAINEL DE CONFRONTO COM DADOS PÚBLICOS DO SALIC (API MinC)
+      const alertContainer = document.getElementById('salicAlertList');
+      alertContainer.innerHTML = proj.salicAlerts.map(alertText => `
+        <div class="salic-alert-item">
+          <span>${alertText}</span>
+        </div>
+      `).join('');
+
+      renderGrid();
+      showToast(`Aba alternada: Exibindo exclusivamente os dados do ${proj.pronac}`, 'info');
+    }
+
+    // 2. FUNÇÕES PARA GERENCIAR O MODAL DE NOVO PROJETO DO ZERO
+    function openNewProjectModal() {
+      document.getElementById('newProjectModal').classList.add('show');
+    }
+
+    function closeNewProjectModal() {
+      document.getElementById('newProjectModal').classList.remove('show');
+    }
+
+    function handleCreateProject(e) {
+      e.preventDefault();
+      const pronacNum = document.getElementById('newPronacNum').value.trim();
+      const title = document.getElementById('newProjectTitle').value.trim();
+      const proponente = document.getElementById('newProponente').value.trim();
+      const banco = document.getElementById('newBanco').value.trim();
+
+      if (!pronacNum || !title) return;
+
+      const newKey = 'proj_' + Date.now();
+      const sanitizedFolder = pronacNum.replace(/[^a-zA-Z0-9]/g, '_');
+
+      // 3. CRIA O NOVO PROJETO ZERADO NO BANCO DE DADOS EM MEMÓRIA
+      projectsData[newKey] = {
+        key: newKey,
+        pronac: pronacNum,
+        title: `${pronacNum} — ${title}`,
+        proponente: proponente || "Novo Proponente Cadastrado",
+        cnpj: "00.000.000/0001-00",
+        banco: banco || "Banco do Brasil Ag: 0000-0 C/C: 00000-0",
+        folderPath: `01_Projetos_Isolados/${sanitizedFolder}/`,
+        mdPath: `01_Projetos_Isolados/${sanitizedFolder}/database/DATABASE_${sanitizedFolder}.md`,
+        controllerName: proponente || "Novo Proponente",
+        metrics: {
+          rawTotal: 0.00,
+          total: "R$ 0,00",
+          totalCount: 0,
+          rawConciliados: 0.00,
+          conciliados: "R$ 0,00",
+          conciliadosCount: 0,
+          rawPendentes: 0.00,
+          pendentes: "R$ 0,00",
+          pendentesCount: 0,
+          percent: "0.0%"
+        },
+        salicAlerts: [
+          "ℹ️ Espaço de trabalho limpo iniciado do zero. Faça o upload dos arquivos e clique em Executar Motor PySpark."
+        ],
+        items: []
+      };
+
+      // Adiciona dinamicamente a nova aba no topo
+      const tabsNav = document.querySelector('.project-tabs-nav');
+      const addBtn = document.getElementById('btnOpenNewProjModal');
+
+      const newTab = document.createElement('button');
+      newTab.type = 'button';
+      newTab.className = 'nav-project-tab';
+      newTab.id = `projectTab-${newKey}`;
+      newTab.onclick = function() { switchProject(newKey); };
+      newTab.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="svg-icon" style="width:20px; height:20px; color:#38bdf8;" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <div>
+            <div>${pronacNum} — ${title}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">${proponente} • R$ 0,00</div>
+          </div>
+        </div>
+        <span class="tab-project-badge">0 Lançamentos</span>
+      `;
+
+      tabsNav.insertBefore(newTab, addBtn);
+
+      closeNewProjectModal();
+      switchProject(newKey);
+      showToast(`Novo espaço de trabalho ${pronacNum} criado e ativado com sucesso!`, 'success');
+    }
+
+    // RENDERIZAÇÃO DA TABELA DINÂMICA
+    function renderGrid() {
+      const proj = getActiveProject();
+      const docReadiness = document.getElementById('docReadinessSelect').value;
+      const sortMode = document.getElementById('sortSelect').value;
+      const query = document.getElementById('searchInput').value.toLowerCase();
+
+      let filtered = proj.items.filter(item => {
+        let matchesStatus = false;
+        if (proj.currentFilter === 'ALL' || !proj.currentFilter) {
+          matchesStatus = true;
+        } else if (proj.currentFilter === 'CONCILIADO_OK' || proj.currentFilter === 'OK') {
+          matchesStatus = (item.status === 'CONCILIADO_OK' || item.status === 'OK');
+        } else if (proj.currentFilter === 'ALERTA_DOCUMENTO_FALTANTE' || proj.currentFilter === 'WARNING') {
+          matchesStatus = (item.status === 'ALERTA_DOCUMENTO_FALTANTE' || item.status === 'WARNING');
+        } else if (proj.currentFilter === 'ALERTA_PJ_INTERMEDIARIA' || proj.currentFilter === 'INFO') {
+          matchesStatus = (item.status === 'ALERTA_PJ_INTERMEDIARIA' || item.status === 'INFO');
+        }
+
+        const matchesReadiness = (docReadiness === 'ALL' || item.readiness === docReadiness);
+        const textSearch = `${item.prestador} ${item.razao} ${item.item} ${item.rubrica} ${item.id} ${item.fullHash} ${item.ordem}`.toLowerCase();
+        const matchesSearch = textSearch.includes(query);
+        return matchesStatus && matchesReadiness && matchesSearch;
+      });
+
+      filtered.sort((a, b) => {
+        if (sortMode === 'PAGAMENTO_ASC') return new Date(a.rawDate || a.data) - new Date(b.rawDate || b.data);
+        if (sortMode === 'PAGAMENTO_DESC') return new Date(b.rawDate || b.data) - new Date(a.rawDate || a.data);
+        if (sortMode === 'VALOR_DESC') return parseFloat(b.valor) - parseFloat(a.valor);
+        return 0;
+      });
+
+      const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const badgeBanner = document.getElementById('conferenciaStatusBadge');
+      badgeBanner.innerText = `Exibindo ${filtered.length} de ${proj.metrics.totalCount} lançamentos (${proj.pronac})`;
+
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
+      const pageItems = filtered.slice(startIndex, endIndex);
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = "";
+
+      // 3. TRATAMENTO AMIGÁVEL PARA PROJETOS RECENTEMENTE CRIADOS DO ZERO (EMPTY STATE)
+      if (pageItems.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align:center; padding:48px 20px;">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+                <div style="width:54px; height:54px; border-radius:14px; background:rgba(59, 130, 246, 0.15); border:1px solid rgba(96, 165, 250, 0.3); color:#60a5fa; display:flex; align-items:center; justify-content:center;">
+                  <svg class="svg-icon" style="width:28px; height:28px;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div style="font-size:1.05rem; font-weight:800; color:#fff;">Espaço de Trabalho Limpo Iniciado do Zero</div>
+                <div style="font-size:0.85rem; color:var(--text-muted); max-width:540px; line-height:1.5;">
+                  Espaço de trabalho limpo iniciado do zero. Faça o upload dos arquivos de extrato (OFX/CSV) e comprovantes (XML/ZIP), e clique em Executar Motor PySpark.
+                </div>
+                <button class="btn-export-salic" style="margin-top:6px;" onclick="simulateUploadInNewProj()">
+                  <svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Upload de Arquivos & Executar Motor PySpark
+                </button>
+              </div>
+            </td>
+          </tr>`;
+      } else {
+        pageItems.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.id = `row-${item.id}`;
+
+          const valFormatted = parseFloat(item.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          const saldoFormatted = parseFloat(item.saldoRestante).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+          const docPillsHtml = item.docs.map(d => {
+            if (d.ok) {
+              return `<span class="doc-pill attached" onclick="openDocPdfViewer('${d.name}', '${item.id}', '${item.prestador}', '${item.razao}', '${item.rubrica}', '${item.item}', 'R$ ${valFormatted}', '${item.data}')">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        ${d.name}
+                      </span>`;
+            } else {
+              return `<span class="doc-pill missing" onclick="openDrawer('${item.prestador}', '${item.id}', '- R$ ${valFormatted}', '${item.status}', '${item.guide}', 'R$ ${saldoFormatted}', '${item.razao}')">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        ${d.name}
+                      </span>`;
+            }
+          }).join('');
+
+          let badgeHtml = `<span class="badge badge-ok">CONCILIADO_OK</span>`;
+          let checkClass = "check-complete";
+
+          if (item.status === 'ALERTA_DOCUMENTO_FALTANTE' || item.status === 'WARNING') {
+            badgeHtml = `<span class="badge badge-warning">DOC. FALTANTE</span>`;
+            checkClass = "check-incomplete";
+          } else if (item.status === 'ALERTA_PJ_INTERMEDIARIA' || item.status === 'INFO') {
+            badgeHtml = `<span class="badge badge-info">DIVERGÊNCIA SALIC</span>`;
+            checkClass = "check-info";
+          }
+
+          const pfSubtextHtml = `
+            <div class="responsavel-pf-tag">
+              <svg class="svg-icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Prestador (PF): ${item.prestador}
+            </div>`;
+
+          const checklistTextHtml = `
+            <div class="doc-checklist-indicator ${checkClass}">
+              <span>${item.checklist}</span>
+              <span style="font-weight:600; font-size:0.7rem; color:${item.missingText ? '#f87171' : '#34d399'};">
+                ${item.missingText ? `⚠️ ${item.missingText}` : `✓ Todos os docs anexados`}
+              </span>
+            </div>`;
+
+          tr.innerHTML = `
+            <td style="text-align:center;">
+              <span class="ordem-badge">#${item.ordem}</span>
+            </td>
+            <td>
+              <div class="favorecido-title">${item.data}</div>
+            </td>
+            <td>
+              <div class="favorecido-title" style="${item.isHighlight ? 'color:#fbbf24;' : ''}">${item.razao}</div>
+              ${pfSubtextHtml}
+            </td>
+            <td>
+              <div class="doc-rubrica">Rubrica ${item.rubrica} — ${item.item}</div>
+              <div class="doc-pill-list">${docPillsHtml}</div>
+            </td>
+            <td>
+              <div class="val-deducao">- R$ ${valFormatted}</div>
+              <div class="saldo-remanescente-box">Saldo Restante: R$ ${saldoFormatted}</div>
+            </td>
+            <td>${badgeHtml}</td>
+            <td>${checklistTextHtml}</td>
+            <td style="text-align:center;">
+              <button class="btn-action-resolve btn-info" onclick="openLineageModal('${item.id}')">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                Ver Detalhes
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // CÁLCULO CONTÁBIL CERTIFICADO DIRECTAMENTE DO BACK-END JSON
+      const totalCaptado = proj.metrics.rawTotal;
+      const okItems = proj.items.filter(d => d.status === 'CONCILIADO_OK' || d.status === 'OK');
+      const totalDebitosExecutados = okItems.reduce((acc, curr) => acc + parseFloat(curr.valor), 0);
+      const saldoRestanteDisponivel = totalCaptado - totalDebitosExecutados;
+
+      const alertItems = proj.items.filter(d => d.status !== 'CONCILIADO_OK' && d.status !== 'OK');
+      const valorTotalAlertas = alertItems.reduce((acc, curr) => acc + parseFloat(curr.valor), 0);
+
+      document.getElementById('tbTotalConciliado').innerText = `R$ ${totalDebitosExecutados.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('tbSaldoDisponivel').innerText = `R$ ${saldoRestanteDisponivel.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+      document.getElementById('summaryTotalCaptado').innerText = `R$ ${totalCaptado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('summaryTotalCaptadoSub').innerText = `(+) Total Captado Aportado no ${proj.pronac}`;
+
+      document.getElementById('summaryTotalDebitos').innerText = `R$ ${totalDebitosExecutados.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('summaryTotalDebitosSub').innerText = `(-) Total Débitos Efetivados (${okItems.length} itens ok)`;
+
+      const formattedSaldoStr = `R$ ${saldoRestanteDisponivel.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('summarySaldoDisponivel').innerText = (saldoRestanteDisponivel >= 0 ? `+ ${formattedSaldoStr}` : formattedSaldoStr);
+
+      const statusBadge = document.getElementById('summaryBudgetStatusBadge');
+      if (saldoRestanteDisponivel >= 0) {
+        statusBadge.className = 'budget-status-badge badge-budget-ok';
+        statusBadge.innerHTML = 'DENTRO DO ORÇAMENTO SALIC';
+      } else {
+        statusBadge.className = 'budget-status-badge badge-budget-alert';
+        statusBadge.innerHTML = 'ALERTA: EXTRAPOLAÇÃO DE CAPTAÇÃO';
+      }
+
+      const valAlertasFormatted = `R$ ${valorTotalAlertas.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('summaryInfoLine').innerHTML = `
+        O Saldo Disponível de ${formattedSaldoStr} é suficiente para cobrir os ${valAlertasFormatted} de lançamentos em estado de alerta após a devida regularização documental.
+      `;
+
+      document.getElementById('paginationInfo').innerText = `Exibindo ${filtered.length > 0 ? startIndex + 1 : 0}-${endIndex} de ${filtered.length} lançamentos (${proj.pronac})`;
+      document.getElementById('pageIndicator').innerText = `Página ${currentPage} de ${totalPages}`;
+      document.getElementById('btnPrevPage').disabled = (currentPage === 1);
+      document.getElementById('btnNextPage').disabled = (currentPage === totalPages);
+    }
+
+    function simulateUploadInNewProj() {
+      showToast('Processando lote de extratos e NFes via Motor PySpark...', 'info');
+      setTimeout(() => {
+        showToast('Motor PySpark finalizado! Registros conciliados no banco de dados.', 'success');
+      }, 1500);
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      renderGrid();
+    }
+
+    function handleFilterClick(statusFilter, event) {
+      const proj = getActiveProject();
+      proj.currentFilter = statusFilter;
+      currentPage = 1;
+      const tabs = document.querySelectorAll('.tab-btn');
+      tabs.forEach(t => t.className = 'tab-btn');
+
+      const clickedBtn = event.currentTarget;
+      if (statusFilter === 'ALL') clickedBtn.classList.add('active');
+      if (statusFilter === 'CONCILIADO_OK' || statusFilter === 'OK') clickedBtn.classList.add('active-ok');
+      if (statusFilter === 'ALERTA_DOCUMENTO_FALTANTE' || statusFilter === 'WARNING') clickedBtn.classList.add('active-warning');
+      if (statusFilter === 'ALERTA_PJ_INTERMEDIARIA' || statusFilter === 'INFO') clickedBtn.classList.add('active-info');
+
+      renderGrid();
+    }
+
+    // MODAL DE LINHAGEM DE DADOS (/audit/lineage/{id})
+    function openLineageModal(txId) {
+      const proj = getActiveProject();
+      const item = proj.items.find(d => d.id === txId) || proj.items[0];
+      if (!item) return;
+      activeItemLineage = item;
+
+      document.getElementById('lineageModalTitle').innerText = `Linhagem de Dados — Lançamento #${item.ordem || 1}`;
+      document.getElementById('lineageEndpointText').innerText = `Endpoint API: /api/v1/audit/lineage/${item.id}`;
+
+      const timeline = document.getElementById('lineageTimeline');
+      timeline.innerHTML = `
+        <div class="timeline-step">
+          <div class="step-icon-badge">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="step-content">
+            <div class="step-title">1. Assinatura Criptográfica (Hash SHA-256 Imutável)</div>
+            <div class="step-value">${item.fullHash}</div>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="step-icon-badge">
+            <svg class="svg-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="step-content">
+            <div class="step-title">2. Extrato OFX Banco do Brasil (Conta Captação Vinc.)</div>
+            <div class="step-value">Protocolo SISBB: ${item.sisbbProtocol} | Data: ${item.data} | Valor: - R$ ${parseFloat(item.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</div>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="step-icon-badge">
+            <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div class="step-content">
+            <div class="step-title">3. Autenticação Pix SISBB / End-to-End ID</div>
+            <div class="step-value">${item.pixProtocol}</div>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="step-icon-badge">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="step-content">
+            <div class="step-title">4. Chave XML NF-e SEFAZ / Recibo Fiscal Auditado</div>
+            <div class="step-value">${item.nfeChave}</div>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="step-icon-badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; border-color:rgba(52, 211, 153, 0.4);">
+            <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="step-content">
+            <div class="step-title">5. Status de Homologação no SALIC (MinC)</div>
+            <div class="step-value" style="color:${item.status === 'CONCILIADO_OK' ? '#34d399' : '#fbbf24'};">
+              ${item.salicStatus} — Rubrica ${item.rubrica} (${item.item})
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('lineageModal').classList.add('show');
+    }
+
+    function closeLineageModal() {
+      document.getElementById('lineageModal').classList.remove('show');
+    }
+
+    function copyLineageHash() {
+      if (activeItemLineage) {
+        navigator.clipboard.writeText(activeItemLineage.fullHash);
+        showToast('Hash SHA-256 copiado para a área de transferência!', 'success');
+      }
+    }
+
+    // AUDITORIA DETALHADA DOS SALDOS CLICÁVEIS
+    function openTotalConciliadoBreakdown() {
+      const modal = document.getElementById('auditModal');
+      const proj = getActiveProject();
+      document.getElementById('auditModalTitle').innerText = `Auditoria do Total Conciliado — ${proj.pronac}`;
+      
+      const body = document.getElementById('auditModalBody');
+      body.innerHTML = `
+        <div style="background:rgba(16, 185, 129, 0.12); border:1px solid rgba(52, 211, 153, 0.35); padding:16px; border-radius:10px; color:#34d399;">
+          <strong>Como chegamos ao Total Conciliado do filtro atual (${document.getElementById('tbTotalConciliado').innerText}):</strong><br>
+          <span style="font-size:0.825rem;">Somatório exato de todos os lançamentos cujos comprovantes bancários e notas fiscais do <strong>${proj.pronac}</strong> foram 100% validados.</span>
+        </div>
+        <div style="background:var(--bg-input); padding:16px; border-radius:10px; border:1px solid var(--border-color); font-size:0.825rem;">
+          <strong>Diretório Isolado de Anexos:</strong> <code>${proj.folderPath}nfe_rpa/</code>
+        </div>
+      `;
+      modal.classList.add('show');
+    }
+
+    function openSaldoDisponivelBreakdown() {
+      const modal = document.getElementById('auditModal');
+      const proj = getActiveProject();
+      document.getElementById('auditModalTitle').innerText = `Auditoria do Saldo Disponível — ${proj.pronac}`;
+      
+      const body = document.getElementById('auditModalBody');
+      body.innerHTML = `
+        <div style="background:rgba(245, 158, 11, 0.12); border:1px solid rgba(251, 191, 36, 0.35); padding:16px; border-radius:10px; color:#fbbf24;">
+          <strong>Como chegamos ao Saldo Disponível de ${document.getElementById('tbSaldoDisponivel').innerText}:</strong><br>
+          <span style="font-size:0.825rem;">Orçamento Inicial Aprovado (${proj.metrics.total}) subtraído dos débitos conciliados do extrato bancário.</span>
+        </div>
+        <div style="background:var(--bg-input); padding:16px; border-radius:10px; border:1px solid var(--border-color); font-size:0.825rem;">
+          <strong>Conta Captação Vinculada:</strong> ${proj.banco}
+        </div>
+      `;
+      modal.classList.add('show');
+    }
+
+    function closeAuditModal() {
+      document.getElementById('auditModal').classList.remove('show');
+    }
+
+    // JANELA SEPARADA DE GOVERNANÇA
+    function openGovWindow() {
+      document.getElementById('govWindowModal').classList.add('show');
+      switchGovTab(1);
+    }
+
+    function closeGovWindow() {
+      document.getElementById('govWindowModal').classList.remove('show');
+    }
+
+    function switchGovTab(tabNum) {
+      const btns = document.querySelectorAll('.gov-tab-btn');
+      btns.forEach((b, idx) => {
+        if (idx === tabNum - 1) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+
+      const area = document.getElementById('govContentArea');
+      const proj = getActiveProject();
+
+      document.getElementById('govFooterFolderPath').innerHTML = `SHA-256 Validated • Pasta em disco: <code>${proj.folderPath}</code>`;
+
+      if (tabNum === 1) {
+        area.innerHTML = `
+          <h3 style="color:#60a5fa; font-size:1.05rem;">Ficha Cadastral e Metas do Projeto — ${proj.pronac}</h3>
+          <div style="background:var(--bg-input); padding:16px; border-radius:10px; border:1px solid var(--border-color); display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.85rem;">
+            <div><strong style="color:var(--text-muted);">Proponente:</strong> ${proj.proponente}</div>
+            <div><strong style="color:var(--text-muted);">CNPJ:</strong> ${proj.cnpj}</div>
+            <div><strong style="color:var(--text-muted);">Banco Captação:</strong> ${proj.banco}</div>
+            <div><strong style="color:var(--text-muted);">Orçamento Aprovado:</strong> ${proj.metrics.total}</div>
+          </div>
+        `;
+      } else if (tabNum === 2) {
+        area.innerHTML = `
+          <h3 style="color:#34d399; font-size:1.05rem;">Motor de Re-Check Anti-Alucinação (${proj.pronac})</h3>
+          <div style="background:var(--bg-input); padding:14px; border-radius:10px; border:1px solid var(--border-color); font-size:0.825rem; color:#34d399;">
+            ✓ Nível médio de confiança do projeto: ${proj.metrics.percent} (Requisito ≥ 95.0%)
+          </div>
+        `;
+      } else if (tabNum === 3) {
+        area.innerHTML = `
+          <h3 style="color:#60a5fa; font-size:1.05rem;">Higienização de Nomes de Arquivos</h3>
+          <p style="font-size:0.825rem; color:var(--text-muted);">Regimento de validação Regex aplicado nos anexos salvos na pasta <code>${proj.folderPath}nfe_rpa/</code></p>
+        `;
+      } else if (tabNum === 4) {
+        area.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="color:#fff; font-size:1.05rem;">Base de Dados Oficial em Markdown (${proj.mdPath.split('/').pop()})</h3>
+            <button class="btn-export-salic" onclick="downloadDatabaseMarkdown()">Baixar Arquivo .md</button>
+          </div>
+          <div style="background:var(--bg-input); border:1px solid var(--border-color); padding:16px; border-radius:10px; font-size:0.825rem; color:#93c5fd;">
+            <strong>Caminho em Disco:</strong> <code>${proj.mdPath}</code>
+          </div>
+        `;
+      }
+    }
+
+    function downloadDatabaseMarkdown() {
+      const proj = getActiveProject();
+      showToast(`Baixando ${proj.mdPath.split('/').pop()}...`, 'success');
+      window.open(proj.mdPath, '_blank');
+    }
+
+    // LEITOR DE PDF NO NAVEGADOR
+    let currentViewingDoc = "";
+    let currentDocMeta = {};
+
+    function copiarPronacParaBusca() {
+      const proj = getActiveProject();
+      const pronac = proj.pronac;
+      navigator.clipboard.writeText(pronac).then(() => {
+        showToast(`📋 PRONAC "${pronac}" copiado! Cole no campo de busca do portal SALIC.`, 'success');
+        const btn = document.getElementById('btnCopiarPronac');
+        if (btn) { btn.style.background = 'rgba(16,185,129,0.5)'; setTimeout(() => btn.style.background = 'rgba(16,185,129,0.2)', 1500); }
+      }).catch(() => {
+        showToast(`PRONAC: ${pronac} — copie manualmente para buscar no portal.`, 'info');
+      });
+    }
+
+    function openSalicPublicPortalLink() {
+      const proj = getActiveProject();
+      // Portal SalicComparar — busca pública oficial do Ministério da Cultura
+      const salicPortal = 'https://aplicacoes.cultura.gov.br/comparar/salicnet/';
+      window.open(salicPortal, '_blank');
+      showToast(`Abrindo portal público SALIC — busque pelo ${proj.pronac}...`, 'info');
+    }
+
+    function openDocPdfViewer(docName, txId, prestador, razao, rubrica, item, valor, data) {
+      currentViewingDoc = docName;
+      currentDocMeta = { docName, txId, prestador, razao, rubrica, item, valor, data };
+
+      const proj = getActiveProject();
+      const pronacDigits = proj.pronac.replace(/[^0-9]/g, '');
+      // Portal SalicComparar — busca por PRONAC via interface pública
+      const salicPortal = 'https://aplicacoes.cultura.gov.br/comparar/salicnet/';
+      const salicApiUrl = pronacDigits
+        ? `https://api.salic.cultura.gov.br/v1/projetos/${pronacDigits}`
+        : salicPortal;
+
+      document.getElementById('docViewerTitle').innerText = docName;
+      document.getElementById('pdfPaperTitle').innerText = `COMPROVANTE FISCAL — ${docName}`;
+      document.getElementById('pdfPaperPronacHeader').innerText = `Prestação de Contas Eletrônica — ${proj.pronac}`;
+      document.getElementById('pdfPaperRazao').innerText = razao;
+      document.getElementById('pdfPaperPrestador').innerText = prestador;
+      document.getElementById('pdfPaperRubrica').innerText = `${rubrica} — ${item}`;
+      document.getElementById('pdfPaperValor').innerText = valor;
+      document.getElementById('pdfSealDate').innerText = `${data} 10:15`;
+
+      const linkEl = document.getElementById('pdfPaperSalicLink');
+      if (linkEl) {
+        linkEl.href = salicPortal;
+        linkEl.innerText = 'https://aplicacoes.cultura.gov.br/comparar/salicnet/';
+      }
+
+      document.getElementById('docViewerModal').classList.add('show');
+    }
+
+    function closeDocViewer() {
+      document.getElementById('docViewerModal').classList.remove('show');
+    }
+
+    function openPdfInNewTab() {
+      const proj = getActiveProject();
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${currentViewingDoc} — Leitor PDF Browser</title>
+          <style>
+            body { margin:0; background:#0b1126; color:#fff; font-family:-apple-system, sans-serif; display:flex; flex-direction:column; height:100vh; }
+            .bar { background:#121a36; padding:16px 24px; border-bottom:1px solid #212e59; display:flex; justify-content:space-between; align-items:center; }
+            .paper { background:#fff; color:#0f172a; max-width:800px; margin:40px auto; padding:60px; border-radius:6px; box-shadow:0 15px 40px rgba(0,0,0,0.6); }
+          </style>
+        </head>
+        <body>
+          <div class="bar">
+            <h2>📄 ${currentViewingDoc}</h2>
+            <span>${proj.title}</span>
+          </div>
+          <div class="paper">
+            <h1 style="font-size:1.5rem; border-bottom:2px solid #0f172a; padding-bottom:10px;">DOCUMENTO DE PRESTAÇÃO DE CONTAS AUDITADO</h1>
+            <p><strong>Projeto:</strong> ${proj.pronac}</p>
+            <p><strong>Lançamento:</strong> ${currentDocMeta.txId}</p>
+            <p><strong>Razão Social:</strong> ${currentDocMeta.razao}</p>
+            <p><strong>Prestador (PF):</strong> ${currentDocMeta.prestador}</p>
+            <p><strong>Rubrica:</strong> ${currentDocMeta.rubrica} — ${currentDocMeta.item}</p>
+            <p><strong>Valor:</strong> ${currentDocMeta.valor}</p>
+            <p><strong>Data de Emissão:</strong> ${currentDocMeta.data}</p>
+            <hr style="margin:20px 0;">
+            <p style="color:#10b981; font-weight:bold;">✓ Documento armazenado na pasta isolada: ${proj.folderPath}nfe_rpa/</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      showToast(`Abrindo PDF em nova aba...`, 'success');
+    }
+
+    function downloadDocFile() {
+      showToast(`Iniciando download de: ${currentViewingDoc}...`, 'success');
+    }
+
+    // Drawer Lateral
+    function openDrawer(prestador, txId, valor, status, customGuide, saldoRestante, razao) {
+      activeTxId = txId;
+      document.getElementById('drawerFavorecido').innerText = prestador;
+      document.getElementById('drawerRazaoSocial').innerText = razao;
+      document.getElementById('drawerTxId').innerText = 'Lançamento Extrato ' + txId;
+      document.getElementById('drawerValor').innerText = valor;
+
+      if (saldoRestante) {
+        document.getElementById('drawerSaldoSubtext').innerText = `Saldo do Orçamento após esta dedução: ${saldoRestante}`;
+      }
+
+      document.getElementById('drawerGuideText').innerText = customGuide || 'Orientação legal para conciliação.';
+
+      const missingRow = document.getElementById('drawerMissingDocStatus');
+      if (status === 'CONCILIADO_OK' || status === 'OK') {
+        missingRow.innerText = 'Anexado';
+        missingRow.style.color = '#34d399';
+      } else {
+        missingRow.innerText = 'Pendente Upload';
+        missingRow.style.color = '#fbbf24';
+      }
+
+      document.getElementById('filePreviewCard').style.display = 'none';
+      document.getElementById('dropzoneBox').style.display = 'flex';
+      document.getElementById('drawerBackdrop').classList.add('show');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawerBackdrop').classList.remove('show');
+    }
+
+    function simulateUpload() {
+      document.getElementById('dropzoneBox').style.display = 'none';
+      const fileCard = document.getElementById('filePreviewCard');
+      fileCard.style.display = 'flex';
+      
+      const rawName = `Comprovante_Validado_${activeTxId}.pdf`;
+      document.getElementById('fileNameText').innerText = rawName;
+      
+      const missingRow = document.getElementById('drawerMissingDocStatus');
+      missingRow.innerText = 'Anexado Agora';
+      missingRow.style.color = '#34d399';
+
+      showToast(`Documento ${rawName} anexado com sucesso!`, 'success');
+    }
+
+    function removeFile(e) {
+      e.stopPropagation();
+      document.getElementById('filePreviewCard').style.display = 'none';
+      document.getElementById('dropzoneBox').style.display = 'flex';
+      showToast('Arquivo removido.', 'warning');
+    }
+
+    function confirmResolution() {
+      if (!activeTxId) return;
+
+      const proj = getActiveProject();
+      const item = proj.items.find(d => d.id === activeTxId);
+      if (item && (item.status !== 'CONCILIADO_OK' && item.status !== 'OK')) {
+        item.status = 'CONCILIADO_OK';
+        item.readiness = 'COMPLETO';
+        item.confidence = 99.8;
+        item.recheckStatus = "VERIFICADO_DUPLO";
+        item.docs.forEach(d => d.ok = true);
+        item.checklist = "Completo (2/2 docs)";
+        item.missingText = null;
+        item.checklistSub = `Concluído em: ${new Date().toLocaleDateString('pt-BR')}`;
+        item.guide = "Lançamento conciliado com todos os documentos anexados.";
+
+        renderGrid();
+      }
+
+      showToast(`Lançamento ${activeTxId} validado e conciliado!`, 'success');
+      closeDrawer();
+    }
+
+    // Modal SALIC
+    function openPreFlightModal() {
+      const proj = getActiveProject();
+      document.getElementById('preFlightModalTitle').innerText = `Pre-Flight Check SALIC — ${proj.pronac}`;
+      document.getElementById('preFlightModalSub').innerText = `Validação dos requisitos do MinC para ${proj.proponente}.`;
+      document.getElementById('preFlightBankCheck').innerText = `${proj.banco} 100% conciliado`;
+      document.getElementById('salicCountText').innerText = `${proj.metrics.conciliadosCount} de ${proj.metrics.totalCount} movimentações validadas`;
+      document.getElementById('salicWarningText').innerText = `${proj.metrics.pendentesCount} pendências documentais restantes (${proj.metrics.pendentes} a regularizar)`;
+      
+      document.getElementById('preFlightModal').classList.add('show');
+    }
+
+    function closePreFlightModal() {
+      document.getElementById('preFlightModal').classList.remove('show');
+    }
+
+    function downloadSalicPackage() {
+      showToast(`Pacote ZIP do ${getActiveProject().pronac} gerado! Download iniciado...`, 'success');
+      closePreFlightModal();
+    }
+
+    // Inicialização da Aba Padrão (PRONAC 1961)
+    switchProject('1961');
+  </script>
+</body>
+</html>
