@@ -1733,10 +1733,11 @@
         </div>
       </div>
 
-      <div class="dropzone-upload" id="dropzoneBox" onclick="simulateUpload()">
+      <div class="dropzone-upload" id="dropzoneBox" onclick="document.getElementById('drawerFileInput').click()">
         <svg class="svg-icon" style="width:32px; height:32px; color:var(--primary);" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div style="font-weight:700; color:#fff; font-size:0.9rem;" id="dropzoneMainText">Clique para selecionar ou arraste o documento pendente aqui</div>
-        <div style="font-size:0.775rem; color:var(--text-muted);">Sanitização automática de caracteres ativada (PDF, XML, PNG, JPG)</div>
+        <div style="font-weight:700; color:#fff; font-size:0.9rem;" id="dropzoneMainText">Clique para selecionar o documento pendente</div>
+        <div style="font-size:0.775rem; color:var(--text-muted);">PDF, XML, PNG ou JPG</div>
+        <input type="file" id="drawerFileInput" accept=".pdf,.xml,.png,.jpg,.jpeg" style="display:none;" onchange="handleDrawerFileSelect(event)">
       </div>
 
       <div class="file-preview-card" id="filePreviewCard">
@@ -2892,6 +2893,9 @@
 
       document.getElementById('filePreviewCard').style.display = 'none';
       document.getElementById('dropzoneBox').style.display = 'flex';
+      pendingAttachedFile = null;
+      const fileInputEl = document.getElementById('drawerFileInput');
+      if (fileInputEl) fileInputEl.value = '';
       document.getElementById('drawerBackdrop').classList.add('show');
     }
 
@@ -2899,39 +2903,64 @@
       document.getElementById('drawerBackdrop').classList.remove('show');
     }
 
-    function simulateUpload() {
+    let pendingAttachedFile = null;
+
+    function handleDrawerFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      pendingAttachedFile = file;
+
       document.getElementById('dropzoneBox').style.display = 'none';
       const fileCard = document.getElementById('filePreviewCard');
       fileCard.style.display = 'flex';
-      
-      const rawName = `Comprovante_Validado_${activeTxId}.pdf`;
-      document.getElementById('fileNameText').innerText = rawName;
-      
+
+      // Sanitiza o nome (remove acentos/espacos) mantendo a extensao original
+      const sanitized = file.name
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9.\-_]/g, '_');
+
+      document.getElementById('fileNameText').innerText = sanitized;
+      const sizeKb = (file.size / 1024).toFixed(1);
+
       const missingRow = document.getElementById('drawerMissingDocStatus');
       missingRow.innerText = 'Anexado Agora';
       missingRow.style.color = '#34d399';
 
-      showToast(`Documento ${rawName} anexado com sucesso!`, 'success');
+      showToast(`Documento "${sanitized}" (${sizeKb} KB) anexado com sucesso!`, 'success');
     }
 
     function removeFile(e) {
       e.stopPropagation();
+      pendingAttachedFile = null;
+      document.getElementById('drawerFileInput').value = '';
       document.getElementById('filePreviewCard').style.display = 'none';
       document.getElementById('dropzoneBox').style.display = 'flex';
+      const missingRow = document.getElementById('drawerMissingDocStatus');
+      missingRow.innerText = 'Pendente Upload';
+      missingRow.style.color = '#fbbf24';
       showToast('Arquivo removido.', 'warning');
     }
 
     function confirmResolution() {
       if (!activeTxId) return;
 
+      if (!pendingAttachedFile) {
+        showToast('Selecione um arquivo antes de confirmar.', 'warning');
+        return;
+      }
+
       const proj = getActiveProject();
       const item = proj.items.find(d => d.id === activeTxId);
       if (item && (item.status !== 'CONCILIADO_OK' && item.status !== 'OK')) {
+        const sanitized = pendingAttachedFile.name
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9.\-_]/g, '_');
+
         item.status = 'CONCILIADO_OK';
         item.readiness = 'COMPLETO';
         item.confidence = 99.8;
         item.recheckStatus = "VERIFICADO_DUPLO";
-        item.docs.forEach(d => d.ok = true);
+        item.docs.forEach(d => { if (!d.ok) { d.ok = true; d.name = sanitized; } });
         item.checklist = "Completo (2/2 docs)";
         item.missingText = null;
         item.checklistSub = `Concluído em: ${new Date().toLocaleDateString('pt-BR')}`;
@@ -2941,6 +2970,7 @@
       }
 
       showToast(`Lançamento ${activeTxId} validado e conciliado!`, 'success');
+      pendingAttachedFile = null;
       closeDrawer();
     }
 
