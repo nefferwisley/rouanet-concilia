@@ -1740,6 +1740,20 @@
   </div>
 
   <script>
+    // =========================================================================
+    // UTILITÁRIO DE SEGURANÇA — ESCAPE XSS (OWASP Regra #1)
+    // Sanitiza qualquer string antes de inserir em innerHTML.
+    // =========================================================================
+    function escapeHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     // -------------------------------------------------------------------------
     // PERSISTÊNCIA REAL GOOGLE DRIVE API (REST v3) + LOCALSTORAGE SYNC ENGINE
     // -------------------------------------------------------------------------
@@ -2337,7 +2351,10 @@
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
       toast.className = 'toast';
-      toast.innerHTML = `<span>${message}</span>`;
+      // Usa textContent para evitar XSS em mensagens de toast
+      const span = document.createElement('span');
+      span.textContent = message;
+      toast.appendChild(span);
       container.appendChild(toast);
 
       setTimeout(() => {
@@ -2365,7 +2382,7 @@
       document.getElementById('projectTitleHeader').innerText = proj.title;
       document.getElementById('projectEyebrow').innerHTML = `
         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
-        Projeto Incentivado MinC — ${proj.pronac}`;
+        Projeto Incentivado MinC — ${escapeHtml(proj.pronac)}`;
 
       document.getElementById('projectMetaProponente').innerText = `Proponente: ${proj.proponente}`;
       document.getElementById('projectMetaBanco').innerText = proj.banco;
@@ -2383,10 +2400,11 @@
       document.getElementById('progressBar').style.width = proj.metrics.percent;
 
       // PAINEL DE CONFRONTO COM DADOS PÚBLICOS DO SALIC (API MinC)
+      // salicAlerts são strings controladas (definidas em projectsData), mas escapamos por segurança
       const alertContainer = document.getElementById('salicAlertList');
       alertContainer.innerHTML = proj.salicAlerts.map(alertText => `
         <div class="salic-alert-item">
-          <span>${alertText}</span>
+          <span>${escapeHtml(alertText)}</span>
         </div>
       `).join('');
 
@@ -2457,8 +2475,8 @@
         <div style="display:flex; align-items:center; gap:10px;">
           <svg class="svg-icon" style="width:20px; height:20px; color:#38bdf8;" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           <div>
-            <div>${pronacNum} — ${title}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">${proponente} • R$ 0,00</div>
+            <div>${escapeHtml(pronacNum)} — ${escapeHtml(title)}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">${escapeHtml(proponente)} • R$ 0,00</div>
           </div>
         </div>
         <span class="tab-project-badge">0 Lançamentos</span>
@@ -2552,17 +2570,17 @@
 
           const docPillsHtml = item.docs.map(d => {
             const docUrl = d.url || `${proj.folderPath}nfe_rpa/${d.name}`;
-            const docUrlEscaped = docUrl.replace(/'/g, "\\'");
-            const docNameEscaped = (d.name || '').replace(/'/g, "\\'");
+            const docUrlEscaped = escapeHtml(docUrl);
+            const docNameEscaped = escapeHtml(d.name || '');
             if (d.ok) {
-              return `<span class="doc-pill attached" onclick="openDocPdfViewer('${docNameEscaped}', '${item.id}', '${docUrlEscaped}')" title="Clique para abrir e visualizar o documento (${d.name})">
+              return `<span class="doc-pill attached" onclick="openDocPdfViewer('${docNameEscaped}', '${escapeHtml(item.id)}', '${docUrlEscaped}')" title="Clique para abrir e visualizar o documento (${docNameEscaped})">
                         <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                        ${d.name}
+                        ${docNameEscaped}
                       </span>`;
             } else {
-              return `<span class="doc-pill missing" onclick="openDrawer('${prestadorEscaped}', '${item.id}', '- R$ ${valFormatted}', '${item.status}', '${guideEscaped}', 'R$ ${saldoFormatted}', '${razaoEscaped}')" title="⚠️ Documento Faltante — Clique para anexar e regularizar">
+              return `<span class="doc-pill missing" onclick="openDrawer('${escapeHtml(prestadorEscaped)}', '${escapeHtml(item.id)}', '- R$ ${escapeHtml(valFormatted)}', '${escapeHtml(item.status)}', '${escapeHtml(guideEscaped)}', 'R$ ${escapeHtml(saldoFormatted)}', '${escapeHtml(razaoEscaped)}')" title="⚠️ Documento Faltante — Clique para anexar e regularizar">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        ${d.name}
+                        ${docNameEscaped}
                       </span>`;
             }
           }).join('');
@@ -2581,40 +2599,40 @@
           const pfSubtextHtml = `
             <div class="responsavel-pf-tag">
               <svg class="svg-icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Prestador (PF): ${item.prestador}
+              Prestador (PF): ${escapeHtml(item.prestador)}
             </div>`;
 
           const checklistTextHtml = `
             <div class="doc-checklist-indicator ${checkClass}">
-              <span>${item.checklist}</span>
+              <span>${escapeHtml(item.checklist)}</span>
               <span style="font-weight:600; font-size:0.7rem; color:${item.missingText ? '#f87171' : '#34d399'};">
-                ${item.missingText ? `⚠️ ${item.missingText}` : `✓ Todos os docs anexados`}
+                ${item.missingText ? `⚠️ ${escapeHtml(item.missingText)}` : `✓ Todos os docs anexados`}
               </span>
             </div>`;
 
           tr.innerHTML = `
             <td data-label="# Ordem" style="text-align:center;">
-              <span class="ordem-badge">#${item.ordem}</span>
+              <span class="ordem-badge">#${escapeHtml(String(item.ordem))}</span>
             </td>
             <td data-label="Data">
-              <div class="favorecido-title">${item.data}</div>
+              <div class="favorecido-title">${escapeHtml(item.data)}</div>
             </td>
             <td data-label="Razão Social / Prestador">
-              <div class="favorecido-title" style="${item.isHighlight ? 'color:#fbbf24;' : ''}">${item.razao}</div>
+              <div class="favorecido-title" style="${item.isHighlight ? 'color:#fbbf24;' : ''}">${escapeHtml(item.razao)}</div>
               ${pfSubtextHtml}
             </td>
-            <td data-label="Rubrica & Documentos">
-              <div class="doc-rubrica">Rubrica ${item.rubrica} — ${item.item}</div>
+            <td data-label="Rubrica &amp; Documentos">
+              <div class="doc-rubrica">Rubrica ${escapeHtml(item.rubrica)} — ${escapeHtml(item.item)}</div>
               <div class="doc-pill-list">${docPillsHtml}</div>
             </td>
-            <td data-label="Valor & Saldo">
-              <div class="val-deducao">- R$ ${valFormatted}</div>
-              <div class="saldo-remanescente-box">Saldo Restante: R$ ${saldoFormatted}</div>
+            <td data-label="Valor &amp; Saldo">
+              <div class="val-deducao">- R$ ${escapeHtml(valFormatted)}</div>
+              <div class="saldo-remanescente-box">Saldo Restante: R$ ${escapeHtml(saldoFormatted)}</div>
             </td>
             <td data-label="Status">${badgeHtml}</td>
             <td data-label="Checklist">${checklistTextHtml}</td>
             <td data-label="Ação" style="text-align:center;">
-              <button class="btn-action-resolve btn-info" onclick="openLineageModal('${item.id}')">
+              <button class="btn-action-resolve btn-info" onclick="openLineageModal('${escapeHtml(item.id)}')">
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                 Ver Detalhes
               </button>
@@ -2711,7 +2729,7 @@
           </div>
           <div class="step-content">
             <div class="step-title">1. Assinatura Criptográfica (Hash SHA-256 Imutável)</div>
-            <div class="step-value">${item.fullHash}</div>
+            <div class="step-value">${escapeHtml(item.fullHash)}</div>
           </div>
         </div>
 
@@ -2721,7 +2739,7 @@
           </div>
           <div class="step-content">
             <div class="step-title">2. Extrato OFX Banco do Brasil (Conta Captação Vinc.)</div>
-            <div class="step-value">Protocolo SISBB: ${item.sisbbProtocol} | Data: ${item.data} | Valor: - R$ ${parseFloat(item.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</div>
+            <div class="step-value">Protocolo SISBB: ${escapeHtml(item.sisbbProtocol)} | Data: ${escapeHtml(item.data)} | Valor: - R$ ${escapeHtml(parseFloat(item.valor).toLocaleString('pt-BR', {minimumFractionDigits:2}))}</div>
           </div>
         </div>
 
@@ -2731,7 +2749,7 @@
           </div>
           <div class="step-content">
             <div class="step-title">3. Autenticação Pix SISBB / End-to-End ID</div>
-            <div class="step-value">${item.pixProtocol}</div>
+            <div class="step-value">${escapeHtml(item.pixProtocol)}</div>
           </div>
         </div>
 
@@ -2741,7 +2759,7 @@
           </div>
           <div class="step-content">
             <div class="step-title">4. Chave XML NF-e SEFAZ / Recibo Fiscal Auditado</div>
-            <div class="step-value">${item.nfeChave}</div>
+            <div class="step-value">${escapeHtml(item.nfeChave)}</div>
           </div>
         </div>
 
@@ -2752,7 +2770,7 @@
           <div class="step-content">
             <div class="step-title">5. Status de Homologação no SALIC (MinC)</div>
             <div class="step-value" style="color:${item.status === 'CONCILIADO_OK' ? '#34d399' : '#fbbf24'};">
-              ${item.salicStatus} — Rubrica ${item.rubrica} (${item.item})
+              ${escapeHtml(item.salicStatus)} — Rubrica ${escapeHtml(item.rubrica)} (${escapeHtml(item.item)})
             </div>
           </div>
         </div>
@@ -2781,11 +2799,11 @@
       const body = document.getElementById('auditModalBody');
       body.innerHTML = `
         <div style="background:rgba(16, 185, 129, 0.12); border:1px solid rgba(52, 211, 153, 0.35); padding:16px; border-radius:10px; color:#34d399;">
-          <strong>Como chegamos ao Total Conciliado do filtro atual (${document.getElementById('tbTotalConciliado').innerText}):</strong><br>
-          <span style="font-size:0.825rem;">Somatório exato de todos os lançamentos cujos comprovantes bancários e notas fiscais do <strong>${proj.pronac}</strong> foram 100% validados.</span>
+          <strong>Como chegamos ao Total Conciliado do filtro atual (${escapeHtml(document.getElementById('tbTotalConciliado').innerText)}):</strong><br>
+          <span style="font-size:0.825rem;">Somatório exato de todos os lançamentos cujos comprovantes bancários e notas fiscais do <strong>${escapeHtml(proj.pronac)}</strong> foram 100% validados.</span>
         </div>
         <div style="background:var(--bg-input); padding:16px; border-radius:10px; border:1px solid var(--border-color); font-size:0.825rem;">
-          <strong>Diretório Isolado de Anexos:</strong> <code>${proj.folderPath}nfe_rpa/</code>
+          <strong>Diretório Isolado de Anexos:</strong> <code>${escapeHtml(proj.folderPath)}nfe_rpa/</code>
         </div>
       `;
       modal.classList.add('show');
@@ -2799,11 +2817,11 @@
       const body = document.getElementById('auditModalBody');
       body.innerHTML = `
         <div style="background:rgba(245, 158, 11, 0.12); border:1px solid rgba(251, 191, 36, 0.35); padding:16px; border-radius:10px; color:#fbbf24;">
-          <strong>Como chegamos ao Saldo Disponível de ${document.getElementById('tbSaldoDisponivel').innerText}:</strong><br>
-          <span style="font-size:0.825rem;">Orçamento Inicial Aprovado (${proj.metrics.total}) subtraído dos débitos conciliados do extrato bancário.</span>
+          <strong>Como chegamos ao Saldo Disponível de ${escapeHtml(document.getElementById('tbSaldoDisponivel').innerText)}:</strong><br>
+          <span style="font-size:0.825rem;">Orçamento Inicial Aprovado (${escapeHtml(proj.metrics.total)}) subtraído dos débitos conciliados do extrato bancário.</span>
         </div>
         <div style="background:var(--bg-input); padding:16px; border-radius:10px; border:1px solid var(--border-color); font-size:0.825rem;">
-          <strong>Conta Captação Vinculada:</strong> ${proj.banco}
+          <strong>Conta Captação Vinculada:</strong> ${escapeHtml(proj.banco)}
         </div>
       `;
       modal.classList.add('show');
@@ -2833,38 +2851,38 @@
       const area = document.getElementById('govContentArea');
       const proj = getActiveProject();
 
-      document.getElementById('govFooterFolderPath').innerHTML = `SHA-256 Validated • Pasta em disco: <code>${proj.folderPath}</code>`;
+      document.getElementById('govFooterFolderPath').innerHTML = `SHA-256 Validated • Pasta em disco: <code>${escapeHtml(proj.folderPath)}</code>`;
 
       if (tabNum === 1) {
         area.innerHTML = `
-          <h3 style="color:#60a5fa; font-size:1.05rem;">Ficha Cadastral e Metas do Projeto — ${proj.pronac}</h3>
+          <h3 style="color:#60a5fa; font-size:1.05rem;">Ficha Cadastral e Metas do Projeto — ${escapeHtml(proj.pronac)}</h3>
           <div style="background:var(--bg-input); padding:16px; border-radius:10px; border:1px solid var(--border-color); display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.85rem;">
-            <div><strong style="color:var(--text-muted);">Proponente:</strong> ${proj.proponente}</div>
-            <div><strong style="color:var(--text-muted);">CNPJ:</strong> ${proj.cnpj}</div>
-            <div><strong style="color:var(--text-muted);">Banco Captação:</strong> ${proj.banco}</div>
-            <div><strong style="color:var(--text-muted);">Orçamento Aprovado:</strong> ${proj.metrics.total}</div>
+            <div><strong style="color:var(--text-muted);">Proponente:</strong> ${escapeHtml(proj.proponente)}</div>
+            <div><strong style="color:var(--text-muted);">CNPJ:</strong> ${escapeHtml(proj.cnpj)}</div>
+            <div><strong style="color:var(--text-muted);">Banco Captação:</strong> ${escapeHtml(proj.banco)}</div>
+            <div><strong style="color:var(--text-muted);">Orçamento Aprovado:</strong> ${escapeHtml(proj.metrics.total)}</div>
           </div>
         `;
       } else if (tabNum === 2) {
         area.innerHTML = `
-          <h3 style="color:#34d399; font-size:1.05rem;">Motor de Re-Check Anti-Alucinação (${proj.pronac})</h3>
+          <h3 style="color:#34d399; font-size:1.05rem;">Motor de Re-Check Anti-Alucinação (${escapeHtml(proj.pronac)})</h3>
           <div style="background:var(--bg-input); padding:14px; border-radius:10px; border:1px solid var(--border-color); font-size:0.825rem; color:#34d399;">
-            ✓ Nível médio de confiança do projeto: ${proj.metrics.percent} (Requisito ≥ 95.0%)
+            ✓ Nível médio de confiança do projeto: ${escapeHtml(proj.metrics.percent)} (Requisito ≥ 95.0%)
           </div>
         `;
       } else if (tabNum === 3) {
         area.innerHTML = `
           <h3 style="color:#60a5fa; font-size:1.05rem;">Higienização de Nomes de Arquivos</h3>
-          <p style="font-size:0.825rem; color:var(--text-muted);">Regimento de validação Regex aplicado nos anexos salvos na pasta <code>${proj.folderPath}nfe_rpa/</code></p>
+          <p style="font-size:0.825rem; color:var(--text-muted);">Regimento de validação Regex aplicado nos anexos salvos na pasta <code>${escapeHtml(proj.folderPath)}nfe_rpa/</code></p>
         `;
       } else if (tabNum === 4) {
         area.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="color:#fff; font-size:1.05rem;">Base de Dados Oficial em Markdown (${proj.mdPath.split('/').pop()})</h3>
+            <h3 style="color:#fff; font-size:1.05rem;">Base de Dados Oficial em Markdown (${escapeHtml(proj.mdPath.split('/').pop())})</h3>
             <button class="btn-export-salic" onclick="downloadDatabaseMarkdown()">Baixar Arquivo .md</button>
           </div>
           <div style="background:var(--bg-input); border:1px solid var(--border-color); padding:16px; border-radius:10px; font-size:0.825rem; color:#93c5fd;">
-            <strong>Caminho em Disco:</strong> <code>${proj.mdPath}</code>
+            <strong>Caminho em Disco:</strong> <code>${escapeHtml(proj.mdPath)}</code>
           </div>
         `;
       }
@@ -2962,8 +2980,8 @@
       };
 
       document.getElementById('docViewerTitle').innerText = docName;
-      document.getElementById('docViewerMeta').innerHTML = `Item: <strong>${matchedItem.rubrica}</strong> • Valor: <strong>R$ ${parseFloat(matchedItem.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong> • Arquivo: <code>${resolvedDocUrl}</code>`;
-      document.getElementById('docViewerPathFooter').innerHTML = `SHA-256 Validated • Caminho: <code>${resolvedDocUrl}</code>`;
+      document.getElementById('docViewerMeta').innerHTML = `Item: <strong>${escapeHtml(matchedItem.rubrica)}</strong> • Valor: <strong>R$ ${escapeHtml(parseFloat(matchedItem.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2}))}</strong> • Arquivo: <code>${escapeHtml(resolvedDocUrl)}</code>`;
+      document.getElementById('docViewerPathFooter').innerHTML = `SHA-256 Validated • Caminho: <code>${escapeHtml(resolvedDocUrl)}</code>`;
 
       const docArea = document.getElementById('docViewportArea');
       const isXml = docName.toLowerCase().endsWith('.xml');
@@ -2981,17 +2999,17 @@
                 ⚠️ ALERTA DE PENDÊNCIA DOCUMENTAL (SALIC / MinC)
               </span>
             </div>
-            <h2 style="font-size:1.25rem; color:#fca5a5; margin:0;">Documento Não Anexado: ${docName}</h2>
+            <h2 style="font-size:1.25rem; color:#fca5a5; margin:0;">Documento Não Anexado: ${escapeHtml(docName)}</h2>
             <p style="font-size:0.875rem; color:#cbd5e1; line-height:1.6;">
-              Este lançamento (<strong>${matchedItem.rubrica} — ${matchedItem.item}</strong> no valor de <strong>R$ ${parseFloat(matchedItem.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>) possui pendência documental registrada pela auditoria.
+              Este lançamento (<strong>${escapeHtml(matchedItem.rubrica)} — ${escapeHtml(matchedItem.item)}</strong> no valor de <strong>R$ ${escapeHtml(parseFloat(matchedItem.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2}))}</strong>) possui pendência documental registrada pela auditoria.
             </p>
             <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:8px; font-size:0.825rem; color:#fef08a;">
               <strong>Exigência legal MinC / Lei Rouanet:</strong><br>
-              ${matchedItem.missingText || 'Falta anexo de comprovante fiscal equivalente (NF-e, RPA ou contrato de intermediação).'}
+              ${escapeHtml(matchedItem.missingText || 'Falta anexo de comprovante fiscal equivalente (NF-e, RPA ou contrato de intermediação).')}
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:10px;">
-              <span style="font-size:0.775rem; color:#94a3b8;">Local de destino esperado: <code>${resolvedDocUrl}</code></span>
-              <button class="btn-export-salic" onclick="simularUploadDocumentoPendente('${matchedItem.id}', '${docName}')">
+              <span style="font-size:0.775rem; color:#94a3b8;">Local de destino esperado: <code>${escapeHtml(resolvedDocUrl)}</code></span>
+              <button class="btn-export-salic" onclick="simularUploadDocumentoPendente('${escapeHtml(matchedItem.id)}', '${escapeHtml(docName)}')">
                 📁 Upload & Regularizar Anexo
               </button>
             </div>
@@ -3021,36 +3039,36 @@
                   <div style="font-size:0.75rem; color:#475569;">Documento Auxiliar da Nota Fiscal Eletrônica</div>
                 </div>
                 <div style="text-align:right;">
-                  <div style="font-size:0.75rem; font-weight:bold;">NF-e Nº ${matchedItem.ordem || 101} — SÉRIE 1</div>
-                  <div style="font-size:0.7rem; color:#475569;">Emissão: ${matchedItem.data}</div>
+                  <div style="font-size:0.75rem; font-weight:bold;">NF-e Nº ${escapeHtml(String(matchedItem.ordem || 101))} — SÉRIE 1</div>
+                  <div style="font-size:0.7rem; color:#475569;">Emissão: ${escapeHtml(matchedItem.data)}</div>
                 </div>
               </div>
 
               <div style="border:1px solid #cbd5e1; padding:10px; margin-bottom:12px; background:#f8fafc; font-family:monospace; font-size:0.75rem; word-break:break-all;">
                 <strong>CHAVE DE ACESSO DA NF-E (44 DÍGITOS):</strong><br>
-                <span style="color:#0284c7; font-weight:bold; font-size:0.85rem;">${nfeChaveDisplay}</span>
+                <span style="color:#0284c7; font-weight:bold; font-size:0.85rem;">${escapeHtml(nfeChaveDisplay)}</span>
               </div>
 
               <table style="width:100%; border-collapse:collapse; margin-bottom:14px; font-size:0.8rem;">
                 <tr>
                   <td style="padding:6px; border:1px solid #cbd5e1; background:#f1f5f9; font-weight:bold; width:30%;">EMITENTE / RAZÃO SOCIAL:</td>
-                  <td style="padding:6px; border:1px solid #cbd5e1;">${matchedItem.razao}</td>
+                  <td style="padding:6px; border:1px solid #cbd5e1;">${escapeHtml(matchedItem.razao)}</td>
                 </tr>
                 <tr>
                   <td style="padding:6px; border:1px solid #cbd5e1; background:#f1f5f9; font-weight:bold;">PRESTADOR (RESPONSÁVEL):</td>
-                  <td style="padding:6px; border:1px solid #cbd5e1;">${matchedItem.prestador}</td>
+                  <td style="padding:6px; border:1px solid #cbd5e1;">${escapeHtml(matchedItem.prestador)}</td>
                 </tr>
                 <tr>
                   <td style="padding:6px; border:1px solid #cbd5e1; background:#f1f5f9; font-weight:bold;">DESTINATÁRIO (PROPONENTE):</td>
-                  <td style="padding:6px; border:1px solid #cbd5e1;">${proj.proponente} (CNPJ: ${proj.cnpj})</td>
+                  <td style="padding:6px; border:1px solid #cbd5e1;">${escapeHtml(proj.proponente)} (CNPJ: ${escapeHtml(proj.cnpj)})</td>
                 </tr>
                 <tr>
                   <td style="padding:6px; border:1px solid #cbd5e1; background:#f1f5f9; font-weight:bold;">RUBRICA ORÇAMENTÁRIA SALIC:</td>
-                  <td style="padding:6px; border:1px solid #cbd5e1; font-weight:bold; color:#0369a1;">${matchedItem.rubrica} — ${matchedItem.item}</td>
+                  <td style="padding:6px; border:1px solid #cbd5e1; font-weight:bold; color:#0369a1;">${escapeHtml(matchedItem.rubrica)} — ${escapeHtml(matchedItem.item)}</td>
                 </tr>
                 <tr>
                   <td style="padding:6px; border:1px solid #cbd5e1; background:#f1f5f9; font-weight:bold;">VALOR TOTAL DA NOTA:</td>
-                  <td style="padding:6px; border:1px solid #cbd5e1; font-weight:bold; color:#15803d; font-size:0.95rem;">R$ ${valFormatted}</td>
+                  <td style="padding:6px; border:1px solid #cbd5e1; font-weight:bold; color:#15803d; font-size:0.95rem;">R$ ${escapeHtml(valFormatted)}</td>
                 </tr>
               </table>
 
@@ -3114,47 +3132,47 @@
             <div class="pdf-header-seal" style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:16px;">
               <div>
                 <div style="font-size:0.9rem; font-weight:bold; color:#0f172a;">MINISTÉRIO DA CULTURA — SALIC / LEI ROUANET</div>
-                <div style="font-size:0.775rem; color:#475569;">Prestação de Contas Eletrônica — <strong>${proj.pronac}</strong></div>
+                <div style="font-size:0.775rem; color:#475569;">Prestação de Contas Eletrônica — <strong>${escapeHtml(proj.pronac)}</strong></div>
               </div>
               <div style="text-align:right;">
                 <div style="font-size:0.75rem; font-weight:bold; color:#10b981; background:#dcfce7; padding:4px 10px; border-radius:4px; display:inline-block;">✓ COMPROVANTE AUDITADO</div>
-                <div style="font-size:0.7rem; color:#64748b; margin-top:4px;">Chancela: ${matchedItem.data} 10:15</div>
+                <div style="font-size:0.7rem; color:#64748b; margin-top:4px;">Chancela: ${escapeHtml(matchedItem.data)} 10:15</div>
               </div>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:12px;">
               <h2 style="font-size:1.15rem; color:#0f172a; border-bottom:1px solid #cbd5e1; padding-bottom:6px; margin:0;">
-                COMPROVANTE DE PAGAMENTO & RECOLHIMENTO FISCAL
+                COMPROVANTE DE PAGAMENTO &amp; RECOLHIMENTO FISCAL
               </h2>
 
               <table style="width:100%; border-collapse:collapse; font-size:0.8rem; font-family:sans-serif; margin-top:4px;">
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155; width:32%;">Nome do Arquivo:</td>
-                  <td style="padding:7px; border:1px solid #cbd5e1; color:#0f172a; font-weight:600;">${docName}</td>
+                  <td style="padding:7px; border:1px solid #cbd5e1; color:#0f172a; font-weight:600;">${escapeHtml(docName)}</td>
                 </tr>
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Proponente / Razão Social:</td>
-                  <td style="padding:7px; border:1px solid #cbd5e1; color:#0f172a;">${matchedItem.razao}</td>
+                  <td style="padding:7px; border:1px solid #cbd5e1; color:#0f172a;">${escapeHtml(matchedItem.razao)}</td>
                 </tr>
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Prestador do Serviço (PF):</td>
-                  <td style="padding:7px; border:1px solid #cbd5e1; color:#0f172a;">${matchedItem.prestador}</td>
+                  <td style="padding:7px; border:1px solid #cbd5e1; color:#0f172a;">${escapeHtml(matchedItem.prestador)}</td>
                 </tr>
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Rubrica Orçamentária:</td>
-                  <td style="padding:7px; border:1px solid #cbd5e1; color:#0369a1; font-weight:bold;">${matchedItem.rubrica} — ${matchedItem.item}</td>
+                  <td style="padding:7px; border:1px solid #cbd5e1; color:#0369a1; font-weight:bold;">${escapeHtml(matchedItem.rubrica)} — ${escapeHtml(matchedItem.item)}</td>
                 </tr>
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Valor Auditado:</td>
-                  <td style="padding:7px; border:1px solid #cbd5e1; font-weight:bold; color:#dc2626; font-size:0.95rem;">R$ ${valFormatted}</td>
+                  <td style="padding:7px; border:1px solid #cbd5e1; font-weight:bold; color:#dc2626; font-size:0.95rem;">R$ ${escapeHtml(valFormatted)}</td>
                 </tr>
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Protocolo Bancário PIX:</td>
-                  <td style="padding:7px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.75rem; color:#475569;">${matchedItem.pixProtocol || 'E00000000202611041015A8F10F'}</td>
+                  <td style="padding:7px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.75rem; color:#475569;">${escapeHtml(matchedItem.pixProtocol || 'E00000000202611041015A8F10F')}</td>
                 </tr>
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Hash SHA-256 (Imutabilidade):</td>
-                  <td style="padding:7px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.7rem; color:#475569; word-break:break-all;">${matchedItem.fullHash || 'a8f10fc9d2e3b4a567890123456789abcdef0123456789abcdef0123456789ab'}</td>
+                  <td style="padding:7px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.7rem; color:#475569; word-break:break-all;">${escapeHtml(matchedItem.fullHash || 'a8f10fc9d2e3b4a567890123456789abcdef0123456789abcdef0123456789ab')}</td>
                 </tr>
               </table>
 
@@ -3164,7 +3182,7 @@
                   Para consultar este projeto diretamente no portal público do Ministério da Cultura:
                 </span>
                 <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                  <code id="pdfPaperSalicLink" style="background:#dcfce7; border:1px solid #86efac; padding:4px 10px; border-radius:4px; font-size:0.8rem; color:#166534; font-family:monospace;">${proj.pronac}</code>
+                  <code id="pdfPaperSalicLink" style="background:#dcfce7; border:1px solid #86efac; padding:4px 10px; border-radius:4px; font-size:0.8rem; color:#166534; font-family:monospace;">${escapeHtml(proj.pronac)}</code>
                   <button style="background:#0284c7; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;" onclick="copiarPronacParaBusca()">
                     📋 Copiar PRONAC
                   </button>
@@ -3388,9 +3406,42 @@ Documento gerado pelo sistema RouanetConcilia.`;
 
     let pendingAttachedFile = null;
 
+    // Tipos MIME permitidos para upload de documentos fiscais (SALIC/MinC)
+    const ALLOWED_MIME_TYPES = [
+      'application/pdf',
+      'image/png',
+      'image/jpeg',
+      'text/xml',
+      'application/xml',
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
+
+    function validateFile(file) {
+      if (!file) return { ok: false, error: 'Nenhum arquivo selecionado.' };
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        return { ok: false, error: `Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Limite máximo: 25 MB.` };
+      }
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        return { ok: false, error: `Tipo de arquivo não permitido (${file.type || 'desconhecido'}). Formatos aceitos: PDF, PNG, JPG, XML, CSV, XLS, XLSX.` };
+      }
+      return { ok: true };
+    }
+
     function handleDrawerFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
+
+      // VALIDAÇÃO DE MIME TYPE E TAMANHO
+      const validation = validateFile(file);
+      if (!validation.ok) {
+        showToast(`❌ ${validation.error}`, 'warning');
+        event.target.value = ''; // Limpa o input
+        return;
+      }
+
       pendingAttachedFile = file;
 
       document.getElementById('dropzoneBox').style.display = 'none';
@@ -3409,6 +3460,51 @@ Documento gerado pelo sistema RouanetConcilia.`;
       missingRow.style.color = '#34d399';
 
       showToast(`Documento "${sanitized}" (${sizeKb} KB) anexado com sucesso!`, 'success');
+    }
+
+    // Handler para upload de pasta/lote de arquivos (botão de pasta no dropzone)
+    function handleFolderSelect(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      const invalidFiles = [];
+      const validFiles = [];
+
+      files.forEach(file => {
+        const validation = validateFile(file);
+        if (validation.ok) {
+          validFiles.push(file);
+        } else {
+          invalidFiles.push(`"${file.name}": ${validation.error}`);
+        }
+      });
+
+      if (invalidFiles.length > 0) {
+        showToast(`⚠️ ${invalidFiles.length} arquivo(s) rejeitado(s) por tipo ou tamanho inválido.`, 'warning');
+        console.warn('Arquivos rejeitados na seleção de pasta:', invalidFiles);
+      }
+
+      if (validFiles.length > 0) {
+        // Por ora, usa o primeiro arquivo válido como pendingAttachedFile
+        // (futura implementação: upload em lote)
+        pendingAttachedFile = validFiles[0];
+
+        document.getElementById('dropzoneBox').style.display = 'none';
+        const fileCard = document.getElementById('filePreviewCard');
+        fileCard.style.display = 'flex';
+
+        const sanitized = validFiles[0].name
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9.\-_]/g, '_');
+
+        document.getElementById('fileNameText').innerText = sanitized + (validFiles.length > 1 ? ` (+${validFiles.length - 1} arquivos)` : '');
+
+        const missingRow = document.getElementById('drawerMissingDocStatus');
+        missingRow.innerText = 'Anexado Agora';
+        missingRow.style.color = '#34d399';
+
+        showToast(`✓ ${validFiles.length} arquivo(s) válido(s) selecionado(s) para upload.`, 'success');
+      }
     }
 
     function removeFile(e) {
