@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       /* Palette 60-30-10 Rule: Refined B2B Dark Theme */
@@ -1760,10 +1761,13 @@
         <div class="check-item" id="salicWarningBox" style="border-color:rgba(251, 191, 36, 0.35); background:rgba(245, 158, 11, 0.14);"><span id="salicWarningText">12 pendências documentais restantes (R$ 3.256,01 a regularizar)</span></div>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:12px; flex-wrap:wrap;">
         <button style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:8px 16px; border-radius:8px; cursor:pointer;" onclick="closePreFlightModal()">Cancelar</button>
-        <button class="btn-export-salic" onclick="downloadSalicPackage()">
-          Baixar Pacote ZIP SALIC
+        <button class="btn-export-salic" style="background:#0284c7;" onclick="exportarPrestacaoContas('csv')">
+          📄 Exportar Relatório CSV (.csv)
+        </button>
+        <button class="btn-export-salic" onclick="exportarPrestacaoContas('xlsx')">
+          📊 Exportar Planilha SALIC (.xlsx)
         </button>
       </div>
     </div>
@@ -4087,9 +4091,87 @@ Documento gerado pelo sistema RouanetConcilia.`;
       document.getElementById('preFlightModal').classList.remove('show');
     }
 
+    // =========================================================================
+    // EXPORTAÇÃO REAL DE PRESTAÇÃO DE CONTAS SALIC (Excel .xlsx e CSV) VIA SheetJS
+    // =========================================================================
+    function exportarPrestacaoContas(format = 'xlsx') {
+      const proj = getActiveProject();
+      if (!proj || !proj.items || proj.items.length === 0) {
+        showToast('❌ Nenhum dado disponível para exportação.', 'warning');
+        return;
+      }
+
+      if (typeof XLSX === 'undefined') {
+        showToast('⚠️ Biblioteca SheetJS ainda está carregando... Tente novamente em 2 segundos.', 'warning');
+        return;
+      }
+
+      try {
+        const rows = proj.items.map(item => {
+          const centavos = item.valor_centavos != null ? item.valor_centavos : paraCentavos(item.valor);
+          const valorReais = centavos / 100;
+          const docsNames = (item.docs || []).map(d => d.name).join('; ');
+
+          return {
+            "Ordem": item.ordem || '',
+            "Data": item.data || '',
+            "Favorecido / Prestador": item.prestador || '',
+            "Razão Social / Emitente": item.razao || '',
+            "Rubrica SALIC": item.rubrica || '',
+            "Item Orçamentário": item.item || '',
+            "Valor (R$)": valorReais,
+            "Status de Auditoria": item.salicStatus || item.status || 'CONCILIADO_OK',
+            "Documentos Anexados": docsNames,
+            "Protocolo PIX / SISBB": item.pixProtocol || item.sisbbProtocol || '',
+            "Chave NF-e": item.nfeChave || '',
+            "Hash SHA-256 (Imutável)": item.fullHash || ''
+          };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+
+        const range = XLSX.utils.decode_range(worksheet['!ref']);
+        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+          const cellAddress = XLSX.utils.encode_cell({ r: R, c: 6 });
+          if (worksheet[cellAddress]) {
+            worksheet[cellAddress].z = '"R$"#,##0.00';
+          }
+        }
+
+        const dateStr = new Date().toISOString().substring(0, 10);
+        const sanitizedPronac = (proj.pronac || 'PROJETO').replace(/[^a-zA-Z0-9]/g, '_');
+
+        if (format === 'csv') {
+          const csvContent = XLSX.utils.sheet_to_csv(worksheet);
+          const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `Prestacao_Contas_${sanitizedPronac}_${dateStr}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          showToast(`✓ Relatório CSV da Prestação de Contas do ${proj.pronac} exportado com sucesso!`, 'success');
+        } else {
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, "Prestação de Contas MinC");
+          XLSX.writeFile(workbook, `Prestacao_Contas_${sanitizedPronac}_${dateStr}.xlsx`);
+
+          showToast(`✓ Planilha Excel (.xlsx) da Prestação de Contas do ${proj.pronac} exportada com sucesso!`, 'success');
+        }
+
+        // Registra na Trilha de Auditoria
+        addAuditLogEntry('exportar_prestacao_contas', proj.key, `Exportação de prestação de contas realizada no formato ${format.toUpperCase()}: ${proj.items.length} lançamentos exportados do ${proj.pronac}.`);
+
+        closePreFlightModal();
+      } catch (err) {
+        console.error('Erro ao exportar prestação de contas:', err);
+        showToast(`❌ Erro na exportação: ${err.message}`, 'warning');
+      }
+    }
+
     function downloadSalicPackage() {
-      showToast(`Pacote ZIP do ${getActiveProject().pronac} gerado! Download iniciado...`, 'success');
-      closePreFlightModal();
+      exportarPrestacaoContas('xlsx');
     }
 
     // Tenta carregar do localStorage ou Drive antes de exibir dados
