@@ -1780,6 +1780,37 @@
     }
 
     // =========================================================================
+    // UTILITÁRIOS DE PRECISÃO NUMÉRICA CONTÁBIL (INTEIROS EM CENTAVOS)
+    // Elimina erros de ponto flutuante (IEEE 754) em somas e comparações
+    // =========================================================================
+    function paraCentavos(valorDigitado) {
+      if (typeof valorDigitado === 'number') {
+        return Math.round(valorDigitado * 100);
+      }
+      if (!valorDigitado) return 0;
+      const limpo = String(valorDigitado).replace(/[^\d,.-]/g, '').replace(',', '.');
+      const parsed = parseFloat(limpo);
+      return isNaN(parsed) ? 0 : Math.round(parsed * 100);
+    }
+
+    function formatarReal(centavos) {
+      const num = (typeof centavos === 'number' ? centavos : 0) / 100;
+      return num.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
+    }
+
+    function verificarDivergenciaValor(valorExtratoCentavos, valorSalicCentavos, tolerânciaCentavos = 5) {
+      const diffCentavos = Math.abs(valorExtratoCentavos - valorSalicCentavos);
+      return {
+        temDivergencia: diffCentavos > tolerânciaCentavos,
+        diferencaCentavos: diffCentavos,
+        diferencaFormatada: formatarReal(diffCentavos)
+      };
+    }
+
+    // =========================================================================
     // MOTOR DE ASSINATURA DIGITAL CRIPTOGRÁFICA (WEB CRYPTO API REAL)
     // Hash SHA-256 real calculado via crypto.subtle.digest
     // =========================================================================
@@ -2146,12 +2177,15 @@
         controllerName: "Assoc. Arte & Vida",
         metrics: {
           rawTotal: 835000.00,
+          rawTotalCentavos: 83500000,
           total: "R$ 835.000,00",
           totalCount: 184,
           rawConciliados: 831743.99,
+          rawConciliadosCentavos: 83174399,
           conciliados: "R$ 831.743,99",
           conciliadosCount: 172,
           rawPendentes: 3256.01,
+          rawPendentesCentavos: 325601,
           pendentes: "R$ 3.256,01",
           pendentesCount: 12,
           percent: "95.8%"
@@ -2174,12 +2208,15 @@
         controllerName: "Assoc. Arte & Vida",
         metrics: {
           rawTotal: 450000.00,
+          rawTotalCentavos: 45000000,
           total: "R$ 450.000,00",
           totalCount: 160,
           rawConciliados: 396000.00,
+          rawConciliadosCentavos: 39600000,
           conciliados: "R$ 396.000,00",
           conciliadosCount: 142,
           rawPendentes: 54000.00,
+          rawPendentesCentavos: 5400000,
           pendentes: "R$ 54.000,00",
           pendentesCount: 18,
           percent: "88.0%"
@@ -2226,15 +2263,13 @@
           data: r.data,
           rawDate: r.rawDate,
           valor: r.valor.toFixed(2),
+          valor_centavos: paraCentavos(r.valor),
           item: r.item,
           rubrica: r.rubrica,
           confidence: r.confidence,
           recheckStatus: isDivergent ? "PENDENTE_RECHECK" : "VERIFICADO_DUPLO",
           status: isDivergent ? "ALERTA_DOCUMENTO_FALTANTE" : "CONCILIADO_OK",
           readiness: isDivergent ? "PENDENCIAS" : "COMPLETO",
-          // ARQUIVOS REAIS E URLs ASSOCIADAS (S3 / Google Drive / Local):
-          // Para conectar arquivos do Cloud Storage (AWS S3/Drive), defina o atributo 'url'.
-          // Exemplo: url: 'https://s3.amazonaws.com/meu-bucket/1._Monica_Guimaraes.pdf'
           docs: [
             { name: r.docLink, url: `${proj.folderPath}nfe_rpa/${encodeURIComponent(r.docLink)}`, ok: !isDivergent },
             { name: "Comprovante_BB.pdf", url: `${proj.folderPath}nfe_rpa/Comprovante_BB.pdf`, ok: true }
@@ -2256,6 +2291,7 @@
 
         if (i <= 172) {
           const isAlfa = i % 2 === 0;
+          const vNum = 4500 + (i * 12);
           proj.items.push({
             id: `TX-SHA256-${shaShort}`,
             fullHash: shaFull,
@@ -2268,7 +2304,8 @@
             isHighlight: false,
             data: dateDisplay,
             rawDate: dateIso,
-            valor: (4500 + (i * 12)).toFixed(2),
+            valor: vNum.toFixed(2),
+            valor_centavos: paraCentavos(vNum),
             item: isAlfa ? "Divulgação & Material Gráfico" : "Locação de Som e Luz",
             rubrica: isAlfa ? "5.1.0" : "3.1.2",
             confidence: parseFloat((97.5 + (i % 25) * 0.1).toFixed(1)),
@@ -2285,6 +2322,7 @@
             guide: "Lançamento conciliado do Documentário."
           });
         } else if (i <= 178) {
+          const vNum = 500;
           proj.items.push({
             id: `TX-SHA256-${shaShort}`,
             fullHash: shaFull,
@@ -2297,7 +2335,8 @@
             isHighlight: false,
             data: dateDisplay,
             rawDate: dateIso,
-            valor: (500).toFixed(2),
+            valor: vNum.toFixed(2),
+            valor_centavos: paraCentavos(vNum),
             item: "Taxa de Uso de Espaço",
             rubrica: "2.1.0",
             confidence: 91.2,
@@ -2314,6 +2353,7 @@
             guide: "Pendente recibo oficial."
           });
         } else {
+          const vNum = 500;
           proj.items.push({
             id: `TX-SHA256-${shaShort}`,
             fullHash: shaFull,
@@ -2326,7 +2366,8 @@
             isHighlight: false,
             data: dateDisplay,
             rawDate: dateIso,
-            valor: (500).toFixed(2),
+            valor: vNum.toFixed(2),
+            valor_centavos: paraCentavos(vNum),
             item: "Agenciamento Cultural",
             rubrica: "1.1.0",
             confidence: 93.8,
@@ -2375,6 +2416,7 @@
           data: r.data,
           rawDate: r.rawDate,
           valor: r.valor.toFixed(2),
+          valor_centavos: paraCentavos(r.valor),
           item: r.item,
           rubrica: r.rubrica,
           confidence: r.confidence,
@@ -2402,6 +2444,7 @@
         const shaFull = `${shaShort}e992e3b4a567890123456789abcdef0123456789abcdef0123456789ab`;
 
         if (i <= 142) {
+          const vNum = 2000 + (i * 15);
           proj.items.push({
             id: `TX-SHA256-${shaShort}`,
             fullHash: shaFull,
@@ -2414,7 +2457,8 @@
             isHighlight: false,
             data: dateDisplay,
             rawDate: dateIso,
-            valor: (2000 + (i * 15)).toFixed(2),
+            valor: vNum.toFixed(2),
+            valor_centavos: paraCentavos(vNum),
             item: "Apresentação Teatral & Som",
             rubrica: "3.1.0",
             confidence: 99.2,
@@ -2431,6 +2475,7 @@
             guide: "Lançamento conciliado do Festival de Teatro."
           });
         } else {
+          const vNum = 3000;
           proj.items.push({
             id: `TX-SHA256-${shaShort}`,
             fullHash: shaFull,
@@ -2443,7 +2488,8 @@
             isHighlight: false,
             data: dateDisplay,
             rawDate: dateIso,
-            valor: (3000).toFixed(2),
+            valor: vNum.toFixed(2),
+            valor_centavos: paraCentavos(vNum),
             item: "Frete de Iluminação e Palco",
             rubrica: "3.4.0",
             confidence: 92.1,
@@ -2476,12 +2522,21 @@
     function computeRunningBalances(proj) {
       if (!proj.items || proj.items.length === 0) return;
       proj.items.sort((a, b) => new Date(a.rawDate || a.data) - new Date(b.rawDate || b.data));
-      let currentBalance = proj.metrics.rawTotal;
+
+      const rawTotalCentavos = proj.metrics.rawTotalCentavos != null 
+        ? proj.metrics.rawTotalCentavos 
+        : paraCentavos(proj.metrics.rawTotal);
+
+      let currentBalanceCentavos = rawTotalCentavos;
 
       proj.items.forEach((item, index) => {
         item.ordem = index + 1;
-        currentBalance -= parseFloat(item.valor);
-        item.saldoRestante = currentBalance;
+        if (item.valor_centavos == null) {
+          item.valor_centavos = paraCentavos(item.valor);
+        }
+        currentBalanceCentavos -= item.valor_centavos;
+        item.saldoRestanteCentavos = currentBalanceCentavos;
+        item.saldoRestante = (currentBalanceCentavos / 100).toFixed(2);
       });
     }
 
@@ -2585,12 +2640,15 @@
         controllerName: proponente || "Novo Proponente",
         metrics: {
           rawTotal: 0.00,
+          rawTotalCentavos: 0,
           total: "R$ 0,00",
           totalCount: 0,
           rawConciliados: 0.00,
+          rawConciliadosCentavos: 0,
           conciliados: "R$ 0,00",
           conciliadosCount: 0,
           rawPendentes: 0.00,
+          rawPendentesCentavos: 0,
           pendentes: "R$ 0,00",
           pendentesCount: 0,
           percent: "0.0%"
@@ -2660,7 +2718,7 @@
       filtered.sort((a, b) => {
         if (sortMode === 'PAGAMENTO_ASC') return new Date(a.rawDate || a.data) - new Date(b.rawDate || b.data);
         if (sortMode === 'PAGAMENTO_DESC') return new Date(b.rawDate || b.data) - new Date(a.rawDate || a.data);
-        if (sortMode === 'VALOR_DESC') return parseFloat(b.valor) - parseFloat(a.valor);
+        if (sortMode === 'VALOR_DESC') return (b.valor_centavos || paraCentavos(b.valor)) - (a.valor_centavos || paraCentavos(a.valor));
         return 0;
       });
 
@@ -2678,7 +2736,6 @@
       const tbody = document.getElementById('tableBody');
       tbody.innerHTML = "";
 
-      // 3. TRATAMENTO AMIGÁVEL PARA PROJETOS RECENTEMENTE CRIADOS DO ZERO (EMPTY STATE)
       if (pageItems.length === 0) {
         tbody.innerHTML = `
           <tr>
@@ -2693,7 +2750,7 @@
                 </div>
                 <button class="btn-export-salic" style="margin-top:6px;" onclick="simulateUploadInNewProj()">
                   <svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Upload de Arquivos & Executar Motor PySpark
+                  Upload de Arquivos &amp; Executar Motor PySpark
                 </button>
               </div>
             </td>
@@ -2703,8 +2760,11 @@
           const tr = document.createElement('tr');
           tr.id = `row-${item.id}`;
 
-          const valFormatted = parseFloat(item.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-          const saldoFormatted = parseFloat(item.saldoRestante).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          const valCentavos = item.valor_centavos != null ? item.valor_centavos : paraCentavos(item.valor);
+          const saldoCentavos = item.saldoRestanteCentavos != null ? item.saldoRestanteCentavos : paraCentavos(item.saldoRestante);
+
+          const valFormatted = formatarReal(valCentavos);
+          const saldoFormatted = formatarReal(saldoCentavos);
 
           const prestadorEscaped = (item.prestador || '').replace(/'/g, "\\'");
           const razaoEscaped = (item.razao || '').replace(/'/g, "\\'");
@@ -2720,7 +2780,7 @@
                         ${docNameEscaped}
                       </span>`;
             } else {
-              return `<span class="doc-pill missing" onclick="openDrawer('${escapeHtml(prestadorEscaped)}', '${escapeHtml(item.id)}', '- R$ ${escapeHtml(valFormatted)}', '${escapeHtml(item.status)}', '${escapeHtml(guideEscaped)}', 'R$ ${escapeHtml(saldoFormatted)}', '${escapeHtml(razaoEscaped)}')" title="⚠️ Documento Faltante — Clique para anexar e regularizar">
+              return `<span class="doc-pill missing" onclick="openDrawer('${escapeHtml(prestadorEscaped)}', '${escapeHtml(item.id)}', '- ${escapeHtml(valFormatted)}', '${escapeHtml(item.status)}', '${escapeHtml(guideEscaped)}', '${escapeHtml(saldoFormatted)}', '${escapeHtml(razaoEscaped)}')" title="⚠️ Documento Faltante — Clique para anexar e regularizar">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         ${docNameEscaped}
                       </span>`;
@@ -2768,8 +2828,8 @@
               <div class="doc-pill-list">${docPillsHtml}</div>
             </td>
             <td data-label="Valor &amp; Saldo">
-              <div class="val-deducao">- R$ ${escapeHtml(valFormatted)}</div>
-              <div class="saldo-remanescente-box">Saldo Restante: R$ ${escapeHtml(saldoFormatted)}</div>
+              <div class="val-deducao">- ${escapeHtml(valFormatted)}</div>
+              <div class="saldo-remanescente-box">Saldo Restante: ${escapeHtml(saldoFormatted)}</div>
             </td>
             <td data-label="Status">${badgeHtml}</td>
             <td data-label="Checklist">${checklistTextHtml}</td>
@@ -2784,29 +2844,32 @@
         });
       }
 
-      // CÁLCULO CONTÁBIL CERTIFICADO DIRECTAMENTE DO BACK-END JSON
-      const totalCaptado = proj.metrics.rawTotal;
+      // CÁLCULO CONTÁBIL CERTIFICADO EM CENTAVOS INTEIROS (PRECISÃO ABSOLUTA)
+      const totalCaptadoCentavos = proj.metrics.rawTotalCentavos != null 
+        ? proj.metrics.rawTotalCentavos 
+        : paraCentavos(proj.metrics.rawTotal);
+
       const okItems = proj.items.filter(d => d.status === 'CONCILIADO_OK' || d.status === 'OK');
-      const totalDebitosExecutados = okItems.reduce((acc, curr) => acc + parseFloat(curr.valor), 0);
-      const saldoRestanteDisponivel = totalCaptado - totalDebitosExecutados;
+      const totalDebitosCentavos = okItems.reduce((acc, curr) => acc + (curr.valor_centavos != null ? curr.valor_centavos : paraCentavos(curr.valor)), 0);
+      const saldoRestanteDisponivelCentavos = totalCaptadoCentavos - totalDebitosCentavos;
 
       const alertItems = proj.items.filter(d => d.status !== 'CONCILIADO_OK' && d.status !== 'OK');
-      const valorTotalAlertas = alertItems.reduce((acc, curr) => acc + parseFloat(curr.valor), 0);
+      const valorTotalAlertasCentavos = alertItems.reduce((acc, curr) => acc + (curr.valor_centavos != null ? curr.valor_centavos : paraCentavos(curr.valor)), 0);
 
-      document.getElementById('tbTotalConciliado').innerText = `R$ ${totalDebitosExecutados.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      document.getElementById('tbSaldoDisponivel').innerText = `R$ ${saldoRestanteDisponivel.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('tbTotalConciliado').innerText = formatarReal(totalDebitosCentavos);
+      document.getElementById('tbSaldoDisponivel').innerText = formatarReal(saldoRestanteDisponivelCentavos);
 
-      document.getElementById('summaryTotalCaptado').innerText = `R$ ${totalCaptado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      document.getElementById('summaryTotalCaptadoSub').innerText = `(+) Total Captado Aportado no ${proj.pronac}`;
+      document.getElementById('summaryTotalCaptado').innerText = formatarReal(totalCaptadoCentavos);
+      document.getElementById('summaryTotalCaptadoSub').innerText = `(+) Total Captado Aportado no ${escapeHtml(proj.pronac)}`;
 
-      document.getElementById('summaryTotalDebitos').innerText = `R$ ${totalDebitosExecutados.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('summaryTotalDebitos').innerText = formatarReal(totalDebitosCentavos);
       document.getElementById('summaryTotalDebitosSub').innerText = `(-) Total Débitos Efetivados (${okItems.length} itens ok)`;
 
-      const formattedSaldoStr = `R$ ${saldoRestanteDisponivel.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      document.getElementById('summarySaldoDisponivel').innerText = (saldoRestanteDisponivel >= 0 ? `+ ${formattedSaldoStr}` : formattedSaldoStr);
+      const formattedSaldoStr = formatarReal(saldoRestanteDisponivelCentavos);
+      document.getElementById('summarySaldoDisponivel').innerText = (saldoRestanteDisponivelCentavos >= 0 ? `+ ${formattedSaldoStr}` : formattedSaldoStr);
 
       const statusBadge = document.getElementById('summaryBudgetStatusBadge');
-      if (saldoRestanteDisponivel >= 0) {
+      if (saldoRestanteDisponivelCentavos >= 0) {
         statusBadge.className = 'budget-status-badge badge-budget-ok';
         statusBadge.innerHTML = 'DENTRO DO ORÇAMENTO SALIC';
       } else {
@@ -2814,9 +2877,9 @@
         statusBadge.innerHTML = 'ALERTA: EXTRAPOLAÇÃO DE CAPTAÇÃO';
       }
 
-      const valAlertasFormatted = `R$ ${valorTotalAlertas.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      const valAlertasFormatted = formatarReal(valorTotalAlertasCentavos);
       document.getElementById('summaryInfoLine').innerHTML = `
-        O Saldo Disponível de ${formattedSaldoStr} é suficiente para cobrir os ${valAlertasFormatted} de lançamentos em estado de alerta após a devida regularização documental.
+        O Saldo Disponível de ${escapeHtml(formattedSaldoStr)} é suficiente para cobrir os ${escapeHtml(valAlertasFormatted)} de lançamentos em estado de alerta após a devida regularização documental.
       `;
 
       document.getElementById('paginationInfo').innerText = `Exibindo ${filtered.length > 0 ? startIndex + 1 : 0}-${endIndex} de ${filtered.length} lançamentos (${proj.pronac})`;
@@ -2881,7 +2944,7 @@
           </div>
           <div class="step-content">
             <div class="step-title">2. Extrato OFX Banco do Brasil (Conta Captação Vinc.)</div>
-            <div class="step-value">Protocolo SISBB: ${escapeHtml(item.sisbbProtocol)} | Data: ${escapeHtml(item.data)} | Valor: - R$ ${escapeHtml(parseFloat(item.valor).toLocaleString('pt-BR', {minimumFractionDigits:2}))}</div>
+            <div class="step-value">Protocolo SISBB: ${escapeHtml(item.sisbbProtocol)} | Data: ${escapeHtml(item.data)} | Valor: - ${escapeHtml(formatarReal(item.valor_centavos || paraCentavos(item.valor)))}</div>
           </div>
         </div>
 
@@ -3122,7 +3185,7 @@
       };
 
       document.getElementById('docViewerTitle').innerText = docName;
-      document.getElementById('docViewerMeta').innerHTML = `Item: <strong>${escapeHtml(matchedItem.rubrica)}</strong> • Valor: <strong>R$ ${escapeHtml(parseFloat(matchedItem.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2}))}</strong> • Arquivo: <code>${escapeHtml(resolvedDocUrl)}</code>`;
+      document.getElementById('docViewerMeta').innerHTML = `Item: <strong>${escapeHtml(matchedItem.rubrica)}</strong> • Valor: <strong>${escapeHtml(formatarReal(matchedItem.valor_centavos || paraCentavos(matchedItem.valor)))}</strong> • Arquivo: <code>${escapeHtml(resolvedDocUrl)}</code>`;
       document.getElementById('docViewerPathFooter').innerHTML = `SHA-256 Validated • Caminho: <code>${escapeHtml(resolvedDocUrl)}</code>`;
 
       const docArea = document.getElementById('docViewportArea');
@@ -3143,7 +3206,7 @@
             </div>
             <h2 style="font-size:1.25rem; color:#fca5a5; margin:0;">Documento Não Anexado: ${escapeHtml(docName)}</h2>
             <p style="font-size:0.875rem; color:#cbd5e1; line-height:1.6;">
-              Este lançamento (<strong>${escapeHtml(matchedItem.rubrica)} — ${escapeHtml(matchedItem.item)}</strong> no valor de <strong>R$ ${escapeHtml(parseFloat(matchedItem.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2}))}</strong>) possui pendência documental registrada pela auditoria.
+              Este lançamento (<strong>${escapeHtml(matchedItem.rubrica)} — ${escapeHtml(matchedItem.item)}</strong> no valor de <strong>${escapeHtml(formatarReal(matchedItem.valor_centavos || paraCentavos(matchedItem.valor)))}</strong>) possui pendência documental registrada pela auditoria.
             </p>
             <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:8px; font-size:0.825rem; color:#fef08a;">
               <strong>Exigência legal MinC / Lei Rouanet:</strong><br>
@@ -3163,8 +3226,8 @@
         document.getElementById('docViewerIcon').innerHTML = `
           <svg class="svg-icon" style="width:24px; height:24px; color:#38bdf8;" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
 
-        const valNum = parseFloat(matchedItem.valor);
-        const valFormatted = valNum.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const valCentavos = matchedItem.valor_centavos != null ? matchedItem.valor_centavos : paraCentavos(matchedItem.valor);
+        const valFormatted = formatarReal(valCentavos);
         const nfeChaveDisplay = matchedItem.nfeChave || `352611123456780001905500100000${matchedItem.ordem || 101}1001234567`;
 
         docArea.innerHTML = `
@@ -3266,8 +3329,8 @@
         document.getElementById('docViewerIcon').innerHTML = `
           <svg class="svg-icon" style="width:24px; height:24px; color:#34d399;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
 
-        const valNum = parseFloat(matchedItem.valor);
-        const valFormatted = valNum.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const valCentavos = matchedItem.valor_centavos != null ? matchedItem.valor_centavos : paraCentavos(matchedItem.valor);
+        const valFormatted = formatarReal(valCentavos);
 
         docArea.innerHTML = `
           <div class="pdf-page-paper" style="background:#fff; color:#0f172a; max-width:800px; width:100%; padding:36px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-family:sans-serif;">
@@ -3306,7 +3369,7 @@
                 </tr>
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Valor Auditado:</td>
-                  <td style="padding:7px; border:1px solid #cbd5e1; font-weight:bold; color:#dc2626; font-size:0.95rem;">R$ ${escapeHtml(valFormatted)}</td>
+                  <td style="padding:7px; border:1px solid #cbd5e1; font-weight:bold; color:#dc2626; font-size:0.95rem;">${escapeHtml(valFormatted)}</td>
                 </tr>
                 <tr>
                   <td style="padding:7px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Protocolo Bancário PIX:</td>
@@ -3408,7 +3471,8 @@
         return;
       }
 
-      const valFormatted = item.valor ? parseFloat(item.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '0,00';
+      const valCentavos = item.valor_centavos != null ? item.valor_centavos : paraCentavos(item.valor);
+      const valFormatted = formatarReal(valCentavos);
 
       const htmlContent = `
         <!DOCTYPE html>
