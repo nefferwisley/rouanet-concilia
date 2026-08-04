@@ -3601,12 +3601,12 @@
         &lt;prod&gt;
           &lt;cProd&gt;RUB-${matchedItem.rubrica}&lt;/cProd&gt;
           &lt;xProd&gt;${matchedItem.item}&lt;/xProd&gt;
-          &lt;vProd&gt;${valNum.toFixed(2)}&lt;/vProd&gt;
+          &lt;vProd&gt;${parseFloat(matchedItem.valor || 0).toFixed(2)}&lt;/vProd&gt;
         &lt;/prod&gt;
       &lt;/det&gt;
       &lt;total&gt;
         &lt;ICMSTot&gt;
-          &lt;vNF&gt;${valNum.toFixed(2)}&lt;/vNF&gt;
+          &lt;vNF&gt;${parseFloat(matchedItem.valor || 0).toFixed(2)}&lt;/vNF&gt;
         &lt;/ICMSTot&gt;
       &lt;/total&gt;
     &lt;/infNFe&gt;
@@ -3847,7 +3847,7 @@
       <ide><nNF>101</nNF><dhEmi>${item.rawDate || '2026-11-04'}</dhEmi></ide>
       <emit><CNPJ>12345678000190</CNPJ><xNome>${item.razao || 'PRESTADOR LTDA'}</xNome></emit>
       <dest><xNome>${getActiveProject().proponente}</xNome></dest>
-      <total><ICMSTot><vNF>${valNum.toFixed(2)}</vNF></ICMSTot></total>
+      <total><ICMSTot><vNF>${parseFloat(matchedItem.valor || 0).toFixed(2)}</vNF></ICMSTot></total>
     </infNFe>
   </NFe>
 </nfeProc>`;
@@ -3859,7 +3859,7 @@ DOCUMENTO: ${docName}
 PROJETO: ${getActiveProject().pronac}
 PRESTADOR: ${item.prestador || '-'} (${item.razao || '-'})
 RUBRICA: ${item.rubrica || '-'} — ${item.item || '-'}
-VALOR: R$ ${valNum.toFixed(2)}
+VALOR: R$ ${parseFloat(matchedItem.valor || 0).toFixed(2)}
 DATA: ${item.data || '-'}
 HASH SHA-256: ${item.fullHash || '-'}
 PROTOCOLO PIX: ${item.pixProtocol || '-'}
