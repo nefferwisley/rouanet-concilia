@@ -1461,17 +1461,25 @@
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="dropzone-upload" style="padding:16px;" onclick="showToast('Extrato bancário OFX/CSV selecionado com sucesso!', 'success')">
+          <div class="dropzone-upload" style="padding:16px;" onclick="document.getElementById('inputExtratoFolder').click()">
             <svg class="svg-icon" style="width:24px; height:24px; color:#60a5fa;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <div style="font-size:0.8rem; font-weight:700; color:#fff;">Anexar Extrato (OFX / CSV)</div>
-            <div style="font-size:0.7rem; color:var(--text-muted);">Banco do Brasil Captação</div>
+            <div style="font-size:0.7rem; color:var(--text-muted);" id="extratoFolderStatus">Toque para selecionar arquivo ou pasta</div>
+            <input type="file" id="inputExtratoFolder" webkitdirectory directory multiple style="display:none;" onchange="handleFolderSelect(event, 'extratoFolderStatus')">
           </div>
 
-          <div class="dropzone-upload" style="padding:16px;" onclick="showToast('Lote de NFes XML/ZIP selecionado com sucesso!', 'success')">
+          <div class="dropzone-upload" style="padding:16px;" onclick="document.getElementById('inputNfeFolder').click()">
             <svg class="svg-icon" style="width:24px; height:24px; color:#34d399;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <div style="font-size:0.8rem; font-weight:700; color:#fff;">Anexar Notas Fiscais (XML / ZIP)</div>
-            <div style="font-size:0.7rem; color:var(--text-muted);">Lote de comprovantes SEFAZ</div>
+            <div style="font-size:0.7rem; color:var(--text-muted);" id="nfeFolderStatus">Toque para selecionar arquivos ou pasta</div>
+            <input type="file" id="inputNfeFolder" webkitdirectory directory multiple style="display:none;" onchange="handleFolderSelect(event, 'nfeFolderStatus')">
           </div>
+        </div>
+
+        <div class="dropzone-upload" style="padding:16px; border-color:rgba(96,165,250,0.4);" onclick="attachDriveFolder()">
+          <svg class="svg-icon" style="width:24px; height:24px; color:#fbbf24;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <div style="font-size:0.8rem; font-weight:700; color:#fff;">Anexar Pasta do Projeto (Google Drive)</div>
+          <div style="font-size:0.7rem; color:var(--text-muted);" id="driveFolderStatus">Conectar e escolher pasta no Drive</div>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
@@ -2164,6 +2172,118 @@
     // 2. FUNÇÕES PARA GERENCIAR O MODAL DE NOVO PROJETO DO ZERO
     function openNewProjectModal() {
       document.getElementById('newProjectModal').classList.add('show');
+    }
+
+    // ===================================================================
+    // CONFIGURAÇÃO DO GOOGLE DRIVE PICKER
+    // Para ativar "Anexar Pasta do Projeto (Google Drive)" de verdade,
+    // preencha as duas linhas abaixo com suas próprias credenciais do
+    // Google Cloud Console (APIs & Services → Credentials):
+    //   1. GOOGLE_API_KEY  → uma API Key com "Google Picker API" habilitada
+    //   2. GOOGLE_CLIENT_ID → um OAuth 2.0 Client ID (tipo "Web application"),
+    //      com "https://nefferwisley.github.io" adicionado em
+    //      "Authorized JavaScript origins"
+    // Guia rápido: console.cloud.google.com → Criar projeto →
+    // Ativar API "Google Picker API" e "Google Drive API" →
+    // Credenciais → Criar API Key e Criar OAuth Client ID.
+    // ===================================================================
+    const GOOGLE_API_KEY = "";
+    const GOOGLE_CLIENT_ID = "";
+
+    let selectedExtratoFiles = [];
+    let selectedNfeFiles = [];
+    let attachedDriveFolder = null;
+    let gDriveAccessToken = null;
+
+    function handleFolderSelect(event, statusElId) {
+      const files = Array.from(event.target.files || []);
+      if (statusElId === 'extratoFolderStatus') selectedExtratoFiles = files;
+      if (statusElId === 'nfeFolderStatus') selectedNfeFiles = files;
+
+      const statusEl = document.getElementById(statusElId);
+      if (files.length === 0) {
+        statusEl.innerText = 'Toque para selecionar arquivo ou pasta';
+        return;
+      }
+      // Detecta se veio de uma pasta (webkitRelativePath preenchido) ou arquivo avulso
+      const isFolder = files[0].webkitRelativePath && files[0].webkitRelativePath.includes('/');
+      const folderName = isFolder ? files[0].webkitRelativePath.split('/')[0] : null;
+
+      statusEl.innerHTML = isFolder
+        ? `✓ Pasta "<strong>${folderName}</strong>" — ${files.length} arquivo(s)`
+        : `✓ ${files.length} arquivo(s) selecionado(s)`;
+      statusEl.style.color = '#34d399';
+
+      showToast(`${files.length} arquivo(s) carregado(s) com sucesso!`, 'success');
+    }
+
+    function loadGooglePickerScripts(callback) {
+      if (window.gapi && window.google && window.google.picker) { callback(); return; }
+      const s1 = document.createElement('script');
+      s1.src = 'https://apis.google.com/js/api.js';
+      s1.onload = () => {
+        gapi.load('picker', () => {
+          const s2 = document.createElement('script');
+          s2.src = 'https://accounts.google.com/gsi/client';
+          s2.onload = callback;
+          document.body.appendChild(s2);
+        });
+      };
+      document.body.appendChild(s1);
+    }
+
+    function attachDriveFolder() {
+      const statusEl = document.getElementById('driveFolderStatus');
+
+      if (!GOOGLE_API_KEY || !GOOGLE_CLIENT_ID) {
+        showToast('Google Drive não configurado ainda — veja o comentário GOOGLE_API_KEY no código-fonte.', 'warning');
+        statusEl.innerHTML = '⚠️ Configure GOOGLE_API_KEY / GOOGLE_CLIENT_ID no código para ativar';
+        return;
+      }
+
+      statusEl.innerText = 'Conectando ao Google Drive...';
+
+      loadGooglePickerScripts(() => {
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'https://www.googleapis.com/auth/drive.readonly',
+          callback: (tokenResponse) => {
+            if (tokenResponse.error) {
+              statusEl.innerText = 'Falha ao conectar com o Drive.';
+              return;
+            }
+            gDriveAccessToken = tokenResponse.access_token;
+            openDrivePicker();
+          }
+        });
+        tokenClient.requestAccessToken({ prompt: gDriveAccessToken ? '' : 'consent' });
+      });
+    }
+
+    function openDrivePicker() {
+      const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+        .setSelectFolderEnabled(true)
+        .setIncludeFolders(true);
+
+      const picker = new google.picker.PickerBuilder()
+        .setOAuthToken(gDriveAccessToken)
+        .setDeveloperKey(GOOGLE_API_KEY)
+        .addView(view)
+        .setTitle('Selecione a pasta do projeto no Drive')
+        .setCallback(pickerCallback)
+        .build();
+      picker.setVisible(true);
+    }
+
+    function pickerCallback(data) {
+      const statusEl = document.getElementById('driveFolderStatus');
+      if (data.action === google.picker.Action.PICKED) {
+        const folder = data.docs[0];
+        attachedDriveFolder = { id: folder.id, name: folder.name, url: folder.url };
+        statusEl.innerHTML = `✓ Pasta conectada: <strong>${folder.name}</strong>`;
+        statusEl.style.color = '#34d399';
+        showToast(`Pasta "${folder.name}" anexada com sucesso!`, 'success');
+      }
     }
 
     function closeNewProjectModal() {
