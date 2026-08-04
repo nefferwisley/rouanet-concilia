@@ -1555,9 +1555,10 @@
         <!-- Timeline steps injetados via JS -->
       </div>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:14px; flex-wrap:wrap; gap:10px;">
         <span style="font-size:0.75rem; color:var(--text-muted);">Assinatura Digital SHA-256 Validada • Imutabilidade Garantida</span>
-        <div style="display:flex; gap:10px;">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <div id="lineageModalManualToggleArea"></div>
           <button style="background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-main); padding:8px 16px; border-radius:8px; font-weight:700; font-size:0.8rem;" onclick="copyLineageHash()">Copiar Hash SHA-256</button>
           <button style="background:var(--primary); border:none; color:#fff; padding:8px 18px; border-radius:8px; font-weight:700; font-size:0.8rem;" onclick="closeLineageModal()">Fechar Linhagem</button>
         </div>
@@ -1817,6 +1818,89 @@
         diferencaCentavos: diffCentavos,
         diferencaFormatada: formatarReal(diffCentavos)
       };
+    }
+
+    // =========================================================================
+    // REGRA DE REFINAMENTO DE AUDITORIA — DETECÇÃO DE PJ INTERMEDIÁRIA (IN 29/2026)
+    // Elimina falso positivo em empresas "Ltda" normais e permite override manual
+    // =========================================================================
+    function isRubricaRiscoIntermediacao(rubrica, itemText) {
+      const text = `${rubrica || ''} ${itemText || ''}`.toLowerCase();
+      const rubricasRisco = ['1.1.0', '1.1', '1.7.0', '1.7', '1.5.0', '1.5'];
+      const keywordsRisco = ['agenciamento', 'intermediação', 'intermediacao', 'produção agenciada', 'gerenciamento cultural'];
+      
+      const isRubrica = rubricasRisco.some(r => (rubrica || '').startsWith(r));
+      const isKeyword = keywordsRisco.some(k => text.includes(k));
+      
+      return isRubrica || isKeyword;
+    }
+
+    function temContratoIntermediacao(docs) {
+      if (!docs || !Array.isArray(docs)) return false;
+      return docs.some(d => d.ok && (
+        d.name.toLowerCase().includes('contrato') || 
+        d.name.toLowerCase().includes('intermediacao') || 
+        d.name.toLowerCase().includes('agenciamento')
+      ));
+    }
+
+    function isPessoaJuridica(razao, prestador, cnpj) {
+      const str = `${razao || ''} ${prestador || ''} ${cnpj || ''}`.toUpperCase();
+      const temKeywordsPJ = str.includes('LTDA') || str.includes('S.A.') || str.includes('S/A') || str.includes(' ME') || str.includes(' EPP') || str.includes('EIRELI') || str.includes('AGÊNCIA') || str.includes('AGENCIA') || str.includes('PRODUÇÕES') || str.includes('PRODUCOES');
+      const temCnpjFormat = /\d{2}\.\d{3}\.\d{3}\/\d{4}\-\d{2}/.test(str);
+      return temKeywordsPJ || temCnpjFormat;
+    }
+
+    function avaliarAlertaPjIntermediaria(item) {
+      if (item.manualPjOverride !== undefined && item.manualPjOverride !== null) {
+        return item.manualPjOverride;
+      }
+      const ehRiscoRubrica = isRubricaRiscoIntermediacao(item.rubrica, item.item);
+      const faltaContrato = !temContratoIntermediacao(item.docs);
+      const ehPJ = isPessoaJuridica(item.razao, item.prestador, item.cnpj);
+
+      return (ehRiscoRubrica && faltaContrato && ehPJ);
+    }
+
+    async function toggleManualPjClassification(txId) {
+      const proj = getActiveProject();
+      const item = proj.items.find(i => i.id === txId);
+      if (!item) return;
+
+      const estadoAtual = (item.status === 'ALERTA_PJ_INTERMEDIARIA');
+      const novoEstado = !estadoAtual;
+
+      item.manualPjOverride = novoEstado;
+
+      if (novoEstado) {
+        item.status = 'ALERTA_PJ_INTERMEDIARIA';
+        item.salicStatus = 'ALERTA_PJ_INTERMEDIARIA';
+        item.readiness = 'PENDENCIAS';
+        item.checklist = "Parcial (Risco PJ Intermediária)";
+        item.missingText = "Sinalizado manualmente pelo Controller: Risco de PJ Intermediária";
+      } else {
+        item.status = 'CONCILIADO_OK';
+        item.salicStatus = 'HOMOLOGADO_MINC';
+        item.readiness = 'COMPLETO';
+        item.checklist = "Completo (2/2 docs)";
+        item.missingText = null;
+      }
+
+      item.atualizado_em = new Date().toISOString();
+      const newHash = await hashLancamento(item);
+      item.fullHash = newHash;
+      item.id = `TX-SHA256-${newHash.substring(0, 8)}`;
+
+      const acaoText = novoEstado ? 'Sinalização Manual de Risco PJ Intermediária' : 'Desmarcação Manual (Fornecedor Direto Legítimo)';
+      addAuditLogEntry('classificacao_manual_pj', item.id, `${acaoText} efetuada no ${proj.pronac} para ${item.prestador}. Novo Hash SHA-256: ${newHash.substring(0, 16)}...`);
+
+      renderGrid();
+      saveDatabaseToDrive(true);
+      showToast(`✓ Classificação atualizada: ${acaoText}!`, 'success');
+
+      if (document.getElementById('lineageModal').classList.contains('show')) {
+        openLineageModal(item.id);
+      }
     }
 
     // =========================================================================
@@ -3265,17 +3349,32 @@
         </div>
 
         <div class="timeline-step">
-          <div class="step-icon-badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; border-color:rgba(52, 211, 153, 0.4);">
+          <div class="step-icon-badge" style="background:${item.status === 'ALERTA_PJ_INTERMEDIARIA' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}; color:${item.status === 'ALERTA_PJ_INTERMEDIARIA' ? '#fbbf24' : '#34d399'}; border-color:${item.status === 'ALERTA_PJ_INTERMEDIARIA' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(52, 211, 153, 0.4)'};">
             <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
           <div class="step-content">
             <div class="step-title">5. Status de Homologação no SALIC (MinC)</div>
             <div class="step-value" style="color:${item.status === 'CONCILIADO_OK' ? '#34d399' : '#fbbf24'};">
               ${escapeHtml(item.salicStatus)} — Rubrica ${escapeHtml(item.rubrica)} (${escapeHtml(item.item)})
+              ${item.manualPjOverride !== undefined && item.manualPjOverride !== null ? `<span style="font-size:0.725rem; color:#38bdf8; margin-left:6px;">[Classificação Manual do Controller]</span>` : ''}
             </div>
           </div>
         </div>
       `;
+
+      const toggleArea = document.getElementById('lineageModalManualToggleArea');
+      if (toggleArea) {
+        const isPjAlert = (item.status === 'ALERTA_PJ_INTERMEDIARIA');
+        toggleArea.innerHTML = isPjAlert ? `
+          <button style="background:rgba(2, 132, 199, 0.2); border:1px solid #0284c7; color:#38bdf8; padding:8px 14px; border-radius:8px; font-weight:700; font-size:0.8rem; cursor:pointer;" onclick="toggleManualPjClassification('${escapeHtml(item.id)}')">
+            ✓ Desmarcar Alerta (Fornecedor Direto)
+          </button>
+        ` : `
+          <button style="background:rgba(245, 158, 11, 0.2); border:1px solid #f59e0b; color:#fbbf24; padding:8px 14px; border-radius:8px; font-weight:700; font-size:0.8rem; cursor:pointer;" onclick="toggleManualPjClassification('${escapeHtml(item.id)}')">
+            ⚠️ Sinalizar Risco PJ Intermediária
+          </button>
+        `;
+      }
 
       document.getElementById('lineageModal').classList.add('show');
     }
