@@ -1487,57 +1487,58 @@
         Cadastre as informações básicas e crie um espaço de trabalho isolado e zerado para uma nova prestação de contas.
       </p>
 
+      <!-- MÓDULO AUTÔNOMO: INGESTÃO VIA LINK DO GOOGLE DRIVE -->
+      <div style="background:linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(37, 99, 235, 0.15)); border:1px solid #059669; padding:16px; border-radius:12px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-size:0.875rem; font-weight:800; color:#34d399; display:flex; align-items:center; gap:8px;">
+            🚀 Iniciar Projeto Autônomo por Link da Pasta do Google Drive
+          </div>
+          <span class="badge" style="background:#059669; color:#fff; font-size:0.7rem;">RECOMENDADO / AUTÔNOMO</span>
+        </div>
+        <div style="font-size:0.775rem; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">
+          Cole a URL da pasta do Google Drive. O motor lerá os arquivos e preencherá automaticamente o <strong>PRONAC, Título, Proponente, CNPJ e Banco</strong> sem digitação manual!
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="url" id="newProjDriveUrlInput" class="search-input" style="flex:1; min-width:260px; box-sizing:border-box;" 
+                 placeholder="https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj"
+                 value="https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj">
+          <button type="button" class="btn-export-salic" style="background:linear-gradient(135deg, #059669, #047857); padding:8px 16px; font-size:0.8rem; font-weight:bold;" id="btnNewProjDriveSubmit" onclick="createProjectAutonomousFromDriveLink()">
+            ⚡ Extrair Metadados &amp; Criar Autônomo
+          </button>
+        </div>
+      </div>
+
+      <!-- BARRA DE PROGRESSO EM TEMPO REAL DA LEITURA AUTÔNOMA -->
+      <div id="newProjProgressBox" style="display:none; background:rgba(5, 150, 105, 0.15); border:1px solid #059669; padding:16px; border-radius:12px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div style="font-size:0.85rem; font-weight:800; color:#34d399;" id="newProjProgressTitle">
+            🔄 Extraindo metadados da pasta do Google Drive...
+          </div>
+          <span style="font-size:0.8rem; font-weight:800; color:#34d399;" id="newProjProgressPercent">0%</span>
+        </div>
+        <div style="width:100%; background:rgba(0,0,0,0.4); height:8px; border-radius:4px; overflow:hidden; margin-bottom:8px;">
+          <div id="newProjProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #059669, #34d399); transition:width 0.3s ease-in-out;"></div>
+        </div>
+        <div style="font-size:0.75rem; color:#cbd5e1;" id="newProjProgressStatus">
+          Conectando ao Google Drive API e mapeando subpastas...
+        </div>
+      </div>
+
+      <div style="text-align:center; font-size:0.725rem; color:var(--text-muted); font-weight:bold; margin:6px 0 12px 0;">
+        ─── OU DIGITE MANUALMENTE OS DADOS ABAIXO ───
+      </div>
+
       <form onsubmit="handleCreateProject(event)" style="display:flex; flex-direction:column; gap:14px;">
-        <!-- MÓDULO AUTÔNOMO: INGESTÃO VIA LINK DO GOOGLE DRIVE -->
-        <div style="background:linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(37, 99, 235, 0.15)); border:1px solid #059669; padding:16px; border-radius:12px; margin-bottom:4px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <div style="font-size:0.875rem; font-weight:800; color:#34d399; display:flex; align-items:center; gap:8px;">
-              🚀 Iniciar Projeto Autônomo por Link da Pasta do Google Drive
-            </div>
-            <span class="badge" style="background:#059669; color:#fff; font-size:0.7rem;">RECOMENDADO / AUTÔNOMO</span>
-          </div>
-          <div style="font-size:0.775rem; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">
-            Cole a URL da pasta do Google Drive. O motor lerá os arquivos e preencherá automaticamente o <strong>PRONAC, Título, Proponente, CNPJ e Banco</strong> sem digitação manual!
-          </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <input type="url" id="newProjDriveUrlInput" class="search-input" style="flex:1; min-width:260px; box-sizing:border-box;" 
-                   placeholder="https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj"
-                   value="https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj">
-            <button type="button" class="btn-export-salic" style="background:linear-gradient(135deg, #059669, #047857); padding:8px 16px; font-size:0.8rem; font-weight:bold;" id="btnNewProjDriveSubmit" onclick="createProjectAutonomousFromDriveLink()">
-              ⚡ Extrair Metadados &amp; Criar Autônomo
-            </button>
-          </div>
-        </div>
-
-        <!-- BARRA DE PROGRESSO EM TEMPO REAL DA LEITURA AUTÔNOMA -->
-        <div id="newProjProgressBox" style="display:none; background:rgba(5, 150, 105, 0.15); border:1px solid #059669; padding:16px; border-radius:12px; margin-bottom:6px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="font-size:0.85rem; font-weight:800; color:#34d399;" id="newProjProgressTitle">
-              🔄 Extraindo metadados da pasta do Google Drive...
-            </div>
-            <span style="font-size:0.8rem; font-weight:800; color:#34d399;" id="newProjProgressPercent">0%</span>
-          </div>
-          <div style="width:100%; background:rgba(0,0,0,0.4); height:8px; border-radius:4px; overflow:hidden; margin-bottom:8px;">
-            <div id="newProjProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #059669, #34d399); transition:width 0.3s ease-in-out;"></div>
-          </div>
-          <div style="font-size:0.75rem; color:#cbd5e1;" id="newProjProgressStatus">
-            Conectando ao Google Drive API e mapeando subpastas...
-          </div>
-        </div>
-
-        <div style="text-align:center; font-size:0.725rem; color:var(--text-muted); font-weight:bold; margin:2px 0;">
-          ─── OU DIGITE MANUALMENTE OS DADOS ABAIXO ───
-        </div>
-
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <div>
             <label style="font-size:0.775rem; color:var(--text-muted); font-weight:700; display:block; margin-bottom:4px;">Número do PRONAC (SALIC / MinC)</label>
-            <input type="text" id="newPronacNum" class="filter-select" style="width:100%;" placeholder="ex: PRONAC 26-1049" required>
+            <input type="text" id="newPronacNum" class="filter-select" style="width:100%;" placeholder="ex: PRONAC 26-1049">
           </div>
           <div>
             <label style="font-size:0.775rem; color:var(--text-muted); font-weight:700; display:block; margin-bottom:4px;">Nome do Projeto Cultural</label>
-            <input type="text" id="newProjectTitle" class="filter-select" style="width:100%;" placeholder="ex: Festival de Jazz e Blues" required>
+            <input type="text" id="newProjectTitle" class="filter-select" style="width:100%;" placeholder="ex: Festival de Jazz e Blues">
           </div>
+        </div>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
