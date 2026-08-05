@@ -1394,6 +1394,7 @@
           </select>
 
           <select class="filter-select" id="sortSelect" onchange="currentPage=1; renderGrid();">
+            <option value="ORDEM_PLANILHA" selected>📊 Ordem da Planilha Oficial Google Sheets (Linha a Linha)</option>
             <option value="PAGAMENTO_ASC">Ordem Cronológica (Do 1º ao Último Lançamento)</option>
             <option value="PAGAMENTO_DESC">Ordem Cronológica Inversa (Mais Recentes Primeiro)</option>
             <option value="VALOR_DESC">Valor (Maior ➔ Menor)</option>
@@ -3133,20 +3134,25 @@
       });
 
       filtered.sort((a, b) => {
+        if (sortMode === 'ORDEM_PLANILHA' || !sortMode) {
+          const oA = a.ordemOriginal != null ? a.ordemOriginal : (a.ordem || 0);
+          const oB = b.ordemOriginal != null ? b.ordemOriginal : (b.ordem || 0);
+          return oA - oB;
+        }
         if (sortMode === 'PAGAMENTO_ASC') {
           const tA = parseBrDate(a.data, a.rawDate);
           const tB = parseBrDate(b.data, b.rawDate);
           if (tA !== tB) return tA - tB;
-          return (a.ordem || 0) - (b.ordem || 0);
+          return (a.ordemOriginal || a.ordem || 0) - (b.ordemOriginal || b.ordem || 0);
         }
         if (sortMode === 'PAGAMENTO_DESC') {
           const tA = parseBrDate(a.data, a.rawDate);
           const tB = parseBrDate(b.data, b.rawDate);
           if (tA !== tB) return tB - tA;
-          return (b.ordem || 0) - (a.ordem || 0);
+          return (b.ordemOriginal || b.ordem || 0) - (a.ordemOriginal || a.ordem || 0);
         }
         if (sortMode === 'VALOR_DESC') return (b.valor_centavos || paraCentavos(b.valor)) - (a.valor_centavos || paraCentavos(a.valor));
-        return (a.ordem || 0) - (b.ordem || 0);
+        return (a.ordemOriginal || a.ordem || 0) - (b.ordemOriginal || b.ordem || 0);
       });
 
       const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
