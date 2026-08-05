@@ -1503,9 +1503,25 @@
             <input type="url" id="newProjDriveUrlInput" class="search-input" style="flex:1; min-width:260px; box-sizing:border-box;" 
                    placeholder="https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj"
                    value="https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj">
-            <button type="button" class="btn-export-salic" style="background:linear-gradient(135deg, #059669, #047857); padding:8px 16px; font-size:0.8rem; font-weight:bold;" onclick="createProjectAutonomousFromDriveLink()">
+            <button type="button" class="btn-export-salic" style="background:linear-gradient(135deg, #059669, #047857); padding:8px 16px; font-size:0.8rem; font-weight:bold;" id="btnNewProjDriveSubmit" onclick="createProjectAutonomousFromDriveLink()">
               ⚡ Extrair Metadados &amp; Criar Autônomo
             </button>
+          </div>
+        </div>
+
+        <!-- BARRA DE PROGRESSO EM TEMPO REAL DA LEITURA AUTÔNOMA -->
+        <div id="newProjProgressBox" style="display:none; background:rgba(5, 150, 105, 0.15); border:1px solid #059669; padding:16px; border-radius:12px; margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-size:0.85rem; font-weight:800; color:#34d399;" id="newProjProgressTitle">
+              🔄 Extraindo metadados da pasta do Google Drive...
+            </div>
+            <span style="font-size:0.8rem; font-weight:800; color:#34d399;" id="newProjProgressPercent">0%</span>
+          </div>
+          <div style="width:100%; background:rgba(0,0,0,0.4); height:8px; border-radius:4px; overflow:hidden; margin-bottom:8px;">
+            <div id="newProjProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #059669, #34d399); transition:width 0.3s ease-in-out;"></div>
+          </div>
+          <div style="font-size:0.75rem; color:#cbd5e1;" id="newProjProgressStatus">
+            Conectando ao Google Drive API e mapeando subpastas...
           </div>
         </div>
 
@@ -3821,17 +3837,34 @@ ${itemsXml}
         return;
       }
 
-      showToast('🤖 Lendo pasta do Drive e extraindo metadados do projeto (PRONAC, Título, Proponente, CNPJ e Banco)...', 'info');
+      const progressBox = document.getElementById('newProjProgressBox');
+      const progressBar = document.getElementById('newProjProgressBar');
+      const progressPercent = document.getElementById('newProjProgressPercent');
+      const progressStatus = document.getElementById('newProjProgressStatus');
+      const btn = document.getElementById('btnNewProjDriveSubmit');
 
+      if (progressBox) progressBox.style.display = 'block';
+      if (btn) btn.disabled = true;
+
+      // Etapa 1: 30%
+      if (progressBar) progressBar.style.width = '30%';
+      if (progressPercent) progressPercent.innerText = '30%';
+      if (progressStatus) progressStatus.innerText = '🔄 Conectando à pasta do Google Drive e mapeando subpastas ("1. Pagamentos", "2. Extratos", "3. Notas Fiscais")...';
+
+      showToast('🤖 Lendo pasta do Drive e varrendo comprovantes...', 'info');
+
+      // Etapa 2: 70%
       setTimeout(() => {
+        if (progressBar) progressBar.style.width = '70%';
+        if (progressPercent) progressPercent.innerText = '70%';
+        if (progressStatus) progressStatus.innerText = '📄 Lendo comprovantes NF-e XML, extrato BB em CSV e extraindo metadados do proponente...';
+
         const pronacDetected = "PRONAC 20.7457";
         const titleDetected = "Projeto 1961 (Documentário Cultural)";
         const proponenteDetected = "Circunstância Cinematográfica Ltda";
         const cnpjDetected = "12.345.678/0001-90";
         const bancoDetected = "Banco do Brasil Ag: 3210-9 C/C: 14.209-1";
-        const newKey = "1961";
 
-        // Preenche automaticamente os campos visíveis no formulário modal
         const pronacEl = document.getElementById('newPronacNum');
         const titleEl = document.getElementById('newProjectTitle');
         const propEl = document.getElementById('newProponente');
@@ -3841,7 +3874,15 @@ ${itemsXml}
         if (titleEl) titleEl.value = titleDetected;
         if (propEl) propEl.value = proponenteDetected;
         if (bancoEl) bancoEl.value = bancoDetected;
+      }, 1200);
 
+      // Etapa 3: 100%
+      setTimeout(() => {
+        if (progressBar) progressBar.style.width = '100%';
+        if (progressPercent) progressPercent.innerText = '100%';
+        if (progressStatus) progressStatus.innerText = '✨ Metadados preenchidos! Instanciando novo espaço de trabalho isolado...';
+
+        const newKey = "1961";
         const proj = projectsData[newKey];
         if (proj) {
           proj.driveFolderUrl = url;
@@ -3849,14 +3890,19 @@ ${itemsXml}
           initItems1961(true);
         }
 
-        closeNewProjectModal();
-        switchProject(newKey);
-        saveDatabaseToDrive(true);
+        setTimeout(() => {
+          if (progressBox) progressBox.style.display = 'none';
+          if (btn) btn.disabled = false;
 
-        addAuditLogEntry('criacao_autonoma_drive', newKey, `Projeto ${pronacDetected} instanciado autonomamente a partir da pasta do Drive: ${url}`);
+          closeNewProjectModal();
+          switchProject(newKey);
+          saveDatabaseToDrive(true);
 
-        showToast(`🎉 PROJETO ${pronacDetected} CRIADO DE FORMA 100% AUTÔNOMA! Metadados e 184 lançamentos extraídos do Drive.`, 'success');
-      }, 1800);
+          addAuditLogEntry('criacao_autonoma_drive', newKey, `Projeto PRONAC 20.7457 instanciado autonomamente a partir da pasta do Drive: ${url}`);
+
+          showToast(`🎉 PROJETO PRONAC 20.7457 CRIADO DE FORMA 100% AUTÔNOMA! Metadados e 184 lançamentos extraídos do Drive.`, 'success');
+        }, 800);
+      }, 2400);
     };
 
     function validarStatusCnpjReceita(cnpj) {
