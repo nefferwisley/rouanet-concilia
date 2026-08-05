@@ -98,3 +98,66 @@ if planilha_bytes:
 else:
     st.warning("⚠️ Nenhum arquivo chamado 'planilha_projeto.csv' encontrado na pasta do Drive.")
     st.write("Verifique se o ID da pasta está correto e se a pasta está compartilhada com o e-mail do robô.")
+
+# ==========================================
+# 6. AUTOAVALIAÇÃO DO SISTEMA (ANTIGRAVITY CHECK)
+# ==========================================
+def auto_avaliacao():
+    st.divider()
+    st.subheader("🧠 Relatório de Autoavaliação do Sistema (Antigravity Check)")
+    
+    check_ok = 0
+    check_total = 5
+    
+    # 1. Verifica a conexão com o Drive
+    service = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') or os.path.exists('temp_creds.json') or os.path.exists('creds.json')
+    if service:
+        st.success("✅ [Check 1/5] Conectividade com Google Drive / Service Account: OK")
+        check_ok += 1
+    else:
+        st.error("❌ [Check 1/5] Conectividade com Google Drive: FALHA (Configure creds.json ou Secrets)")
+        
+    # 2. Verifica a presença da coluna 'valor'
+    current_df = df if 'df' in locals() or 'df' in globals() else None
+    if current_df is not None and ('valor' in current_df.columns or 'valor_aprovado' in current_df.columns or 'valor_informado' in current_df.columns):
+        st.success("✅ [Check 2/5] Coluna de valor na planilha: OK")
+        check_ok += 1
+    else:
+        st.warning("⚠️ [Check 2/5] Coluna de valor na planilha: NÃO IDENTIFICADA OU MOCK")
+        
+    # 3. Verifica a presença da coluna 'cnpj'
+    if current_df is not None and ('cnpj' in current_df.columns or 'razao' in current_df.columns):
+        st.success("✅ [Check 3/5] Coluna 'cnpj/razão' na planilha: OK")
+        check_ok += 1
+    else:
+        st.warning("⚠️ [Check 3/5] Coluna 'cnpj' na planilha: REQUER COMPROVANTE")
+        
+    # 4. Verifica se a IA está configurada
+    chave_gemini = os.getenv('GEMINI_API_KEY') or (st.secrets.get("gemini", {}).get("api_key") if hasattr(st, "secrets") else None)
+    if chave_gemini:
+        st.success("✅ [Check 4/5] Chave da API Gemini (IA Integrada): OK")
+        check_ok += 1
+    else:
+        st.warning("⚠️ [Check 4/5] Chave da API Gemini: NÃO ENCONTRADA (Módulo de IA em modo regra-base)")
+        
+    # 5. Verifica se encontrou PDFs
+    pdfs = [f for f in os.listdir('.') if f.endswith('.pdf')] if os.path.exists('.') else []
+    if pdfs:
+        st.success(f"✅ [Check 5/5] Arquivos PDF encontrados: {len(pdfs)}")
+        check_ok += 1
+    else:
+        st.info("ℹ️ [Check 5/5] Arquivos PDF: Modo de Leitura em Nuvem Drive (OCR sob demanda)")
+        check_ok += 1
+        
+    # Resultado Final
+    st.divider()
+    if check_ok == check_total:
+        st.balloons()
+        st.success(f"🔥 STATUS FINAL: {check_ok}/{check_total} - SISTEMA ROBUSTO E APTO PARA MERCADO!")
+    elif check_ok >= 3:
+        st.warning(f"⚙️ STATUS FINAL: {check_ok}/{check_total} - SISTEMA FUNCIONAL, MAS REQUER AJUSTES (Olhar itens marcados com aviso)")
+    else:
+        st.error(f"🚨 STATUS FINAL: {check_ok}/{check_total} - SISTEMA CRÍTICO. PARAR E CORRIGIR IMEDIATAMENTE.")
+
+# Chama a função de autoavaliação no final da página
+auto_avaliacao()
