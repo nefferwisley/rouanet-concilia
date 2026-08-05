@@ -2149,8 +2149,8 @@
             // Se os dados salvos contiverem um Projeto 1961 corrompido ou com menos de 10 itens, preserva os itens oficiais
             if (parsed.projectsData['1961']) {
               const p1961 = parsed.projectsData['1961'];
-              if (!p1961.items || p1961.items.length < 10 || (p1961.items[0] && p1961.items[0].data === '02/11/2026')) {
-                console.warn('Banco local continha versão legada ou desordenada do Projeto 1961. Atualizando para massa oficial.');
+              if (!p1961.items || p1961.items.length < 10 || (p1961.items[0] && p1961.items[0].data && p1961.items[0].data.includes('2026'))) {
+                console.warn('Banco local continha ano 2026 legado do Projeto 1961. Atualizando para massa oficial 2022.');
                 delete parsed.projectsData['1961'];
               }
             }
@@ -2635,18 +2635,18 @@
 
       proj.items = [];
       const realRows1961 = [
-        { prestador: "Mónica Guimarães", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 11000.00, item: "Produtora Executiva", rubrica: "1.5.1", docLink: "1. Mônica Guimarães - Produtora.pdf", confidence: 99.8, missingText: null },
-        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 5000.00, item: "Obras pré-existentes", rubrica: "1.2.1", docLink: "4. Amir Labaki - Roteirista.pdf", confidence: 99.5, missingText: null },
-        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 20000.00, item: "Diretor", rubrica: "1.4.1", docLink: "3. Amir Labaki - Diretor.pdf", confidence: 99.7, missingText: null },
-        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 30000.00, item: "Roteirista", rubrica: "1.1.1", docLink: "2. Amir Labaki - Obras.pdf", confidence: 99.6, missingText: null },
-        { prestador: "Felipe Frico Guimarães", razao: "FELIPE GUIMARÃES ROSA", isHighlight: true, data: "10/11/2026", rawDate: "2026-11-10", valor: 1200.00, item: "Diretor de Fotografia", rubrica: "3.5.1", docLink: "5. Frico Guimarães - Dir. Foto.pdf", confidence: 98.9, missingText: null },
-        { prestador: "Luis Felipe Labaki", razao: "LUIS FELIPE LABAKI", isHighlight: true, data: "10/11/2026", rawDate: "2026-11-10", valor: 1200.00, item: "Som Direto", rubrica: "3.6.1", docLink: "6. Luis Felipe Labaki - Som.pdf", confidence: 99.1, missingText: null },
-        { prestador: "Luis Felipe Cipullo", razao: "LUIS FELIPE MONTE CIPULLO", isHighlight: true, data: "21/11/2026", rawDate: "2026-11-21", valor: 800.00, item: "Assistente de Fotografia", rubrica: "3.6.2", docLink: "7. Luis Cipullo (1961).pdf", confidence: 98.7, missingText: null },
-        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "28/11/2026", rawDate: "2026-11-28", valor: 20000.00, item: "Diretor", rubrica: "2.1.1", docLink: "8. Amir Labaki - Diretor.pdf", confidence: 99.4, missingText: null },
-        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "12/12/2026", rawDate: "2026-12-12", valor: 30000.00, item: "Diretor", rubrica: "3.1.1", docLink: "9. Amir Labaki - Diretor.pdf", confidence: 99.6, missingText: null },
-        { prestador: "Júlia Sousa", razao: "JÚLIA SOUSA AUDITORIA ME", isHighlight: true, data: "15/12/2026", rawDate: "2026-12-15", valor: 4900.00, item: "Controller do Projeto", rubrica: "1.6.1", docLink: "10_Julia_Sousa_Controller.pdf", confidence: 91.5, missingText: "Falta: NF-e/Recibo nº 402 no SALIC" },
-        { prestador: "Gráfica e Editora Alfa Ltda", razao: "GRAFICA E EDITORA ALFA LTDA", isHighlight: false, data: "10/11/2026", rawDate: "2026-11-10", valor: 4644.00, item: "Divulgação & Material Gráfico", rubrica: "5.1.0", docLink: "Comprovante_PIX.pdf", confidence: 99.9, missingText: null },
-        { prestador: "Eduardo Gerenciamento", razao: "GERENCIAMENTO CULTURAL LTDA", isHighlight: false, data: "18/12/2026", rawDate: "2026-12-18", valor: 19550.00, item: "Gerenciamento Geral", rubrica: "1.7.0", docLink: "15_Gerenciamento_Cultural.pdf", confidence: 92.0, missingText: "Falta: Ajuste de R$ 50,00 no SALIC" }
+        { prestador: "Mónica Guimarães", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2022", rawDate: "2022-11-04", valor: 11000.00, item: "Produtora Executiva", rubrica: "1.5.1", docLink: "1. Mônica Guimarães - Produtora.pdf", confidence: 99.8, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2022", rawDate: "2022-11-04", valor: 5000.00, item: "Obras pré-existentes", rubrica: "1.2.1", docLink: "4. Amir Labaki - Roteirista.pdf", confidence: 99.5, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2022", rawDate: "2022-11-04", valor: 20000.00, item: "Diretor", rubrica: "1.4.1", docLink: "3. Amir Labaki - Diretor.pdf", confidence: 99.7, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2022", rawDate: "2022-11-04", valor: 30000.00, item: "Roteirista", rubrica: "1.1.1", docLink: "2. Amir Labaki - Obras.pdf", confidence: 99.6, missingText: null },
+        { prestador: "Felipe Frico Guimarães", razao: "FELIPE GUIMARÃES ROSA", isHighlight: true, data: "10/11/2022", rawDate: "2022-11-10", valor: 1200.00, item: "Diretor de Fotografia", rubrica: "3.5.1", docLink: "5. Frico Guimarães - Dir. Foto.pdf", confidence: 98.9, missingText: null },
+        { prestador: "Luis Felipe Labaki", razao: "LUIS FELIPE LABAKI", isHighlight: true, data: "10/11/2022", rawDate: "2022-11-10", valor: 1200.00, item: "Som Direto", rubrica: "3.6.1", docLink: "6. Luis Felipe Labaki - Som.pdf", confidence: 99.1, missingText: null },
+        { prestador: "Gráfica e Editora Alfa Ltda", razao: "GRAFICA E EDITORA ALFA LTDA", isHighlight: false, data: "10/11/2022", rawDate: "2022-11-10", valor: 4644.00, item: "Divulgação & Material Gráfico", rubrica: "5.1.0", docLink: "Comprovante_PIX.pdf", confidence: 99.9, missingText: null },
+        { prestador: "Luis Felipe Cipullo", razao: "LUIS FELIPE MONTE CIPULLO", isHighlight: true, data: "21/11/2022", rawDate: "2022-11-21", valor: 800.00, item: "Assistente de Fotografia", rubrica: "3.6.2", docLink: "7. Luis Cipullo (1961).pdf", confidence: 98.7, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "28/11/2022", rawDate: "2022-11-28", valor: 20000.00, item: "Diretor", rubrica: "2.1.1", docLink: "8. Amir Labaki - Diretor.pdf", confidence: 99.4, missingText: null },
+        { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "12/12/2022", rawDate: "2022-12-12", valor: 30000.00, item: "Diretor", rubrica: "3.1.1", docLink: "9. Amir Labaki - Diretor.pdf", confidence: 99.6, missingText: null },
+        { prestador: "Júlia Sousa", razao: "JÚLIA SOUSA AUDITORIA ME", isHighlight: true, data: "15/12/2022", rawDate: "2022-12-15", valor: 4900.00, item: "Controller do Projeto", rubrica: "1.6.1", docLink: "10_Julia_Sousa_Controller.pdf", confidence: 91.5, missingText: "Falta: NF-e/Recibo nº 402 no SALIC" },
+        { prestador: "Eduardo Gerenciamento", razao: "GERENCIAMENTO CULTURAL LTDA", isHighlight: false, data: "18/12/2022", rawDate: "2022-12-18", valor: 19550.00, item: "Gerenciamento Geral", rubrica: "1.7.0", docLink: "15_Gerenciamento_Cultural.pdf", confidence: 92.0, missingText: "Falta: Ajuste de R$ 50,00 no SALIC" }
       ];
 
       realRows1961.forEach((r, idx) => {
@@ -2657,9 +2657,9 @@
         proj.items.push({
           id: `TX-SHA256-${shaShort}`,
           fullHash: shaFull,
-          pixProtocol: `E00000000202611041015${shaShort.toUpperCase()}`,
-          sisbbProtocol: `SISBB-BB-2026-${8849200 + idx}`,
-          nfeChave: `352611123456780001905500100000${8800 + idx}1001234567`,
+          pixProtocol: `E00000000202211041015${shaShort.toUpperCase()}`,
+          sisbbProtocol: `SISBB-BB-2022-${8849200 + idx}`,
+          nfeChave: `352211123456780001905500100000${8800 + idx}1001234567`,
           salicStatus: isDivergent ? "ALERTA_DIVERGENCIA_MINC" : "HOMOLOGADO_MINC",
           prestador: r.prestador,
           razao: r.razao,
@@ -2686,12 +2686,12 @@
       });
 
       for (let i = 13; i <= 184; i++) {
-        // Distribui as datas dos itens sintéticos entre 04/11/2026 e 28/11/2026 para respeitar a ordem cronológica real
+        // Distribui as datas dos itens sintéticos entre 04/11/2022 e 28/11/2022 para respeitar a ordem cronológica real de 2022
         const progress = (i - 13) / (184 - 13);
         const dayNum = Math.min(28, Math.floor(progress * 24) + 4);
         const dayStr = dayNum.toString().padStart(2, '0');
-        const dateIso = `2026-11-${dayStr}`;
-        const dateDisplay = `${dayStr}/11/2026`;
+        const dateIso = `2022-11-${dayStr}`;
+        const dateDisplay = `${dayStr}/11/2022`;
         const shaShort = `b${(i + 100).toString(16)}c${(i * 3).toString(16)}`;
         const shaFull = `${shaShort}77a2e3b4a567890123456789abcdef0123456789abcdef0123456789ab`;
 
@@ -2701,9 +2701,9 @@
           proj.items.push({
             id: `TX-SHA256-${shaShort}`,
             fullHash: shaFull,
-            pixProtocol: `E00000000202611${dayStr}1015${shaShort.toUpperCase()}`,
-            sisbbProtocol: `SISBB-BB-2026-${9900000 + i}`,
-            nfeChave: `352611123456780001905500100000${9900 + i}1001234567`,
+            pixProtocol: `E00000000202211${dayStr}1015${shaShort.toUpperCase()}`,
+            sisbbProtocol: `SISBB-BB-2022-${9900000 + i}`,
+            nfeChave: `352211123456780001905500100000${9900 + i}1001234567`,
             salicStatus: "HOMOLOGADO_MINC",
             prestador: isAlfa ? "Carlos Eduardo Silva" : "Mariana Souza Lima",
             razao: isAlfa ? "GRAFICA E EDITORA ALFA LTDA" : "TECH SOUND PRODUCOES LTDA",
