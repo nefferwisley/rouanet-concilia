@@ -1845,6 +1845,35 @@
       };
     }
 
+    // Parser robusto de datas brasileiras (DD/MM/YYYY ou YYYY-MM-DD)
+    function parseBrDate(dateStr, rawDateStr) {
+      if (rawDateStr) {
+        const parts = String(rawDateStr).split('-');
+        if (parts.length === 3) {
+          return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)).getTime();
+        }
+      }
+      if (dateStr) {
+        const s = String(dateStr).trim();
+        if (s.includes('-')) {
+          const parts = s.split('-');
+          if (parts[0].length === 4) {
+            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)).getTime();
+          }
+        }
+        if (s.includes('/')) {
+          const parts = s.split('/');
+          if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            return new Date(year, month, day).getTime();
+          }
+        }
+      }
+      return 0;
+    }
+
     // =========================================================================
     // REGRA DE REFINAMENTO DE AUDITORIA — DETECÇÃO DE PJ INTERMEDIÁRIA (IN 29/2026)
     // Elimina falso positivo em empresas "Ltda" normais e permite override manual
@@ -2900,7 +2929,7 @@
 
     function computeRunningBalances(proj) {
       if (!proj.items || proj.items.length === 0) return;
-      proj.items.sort((a, b) => new Date(a.rawDate || a.data) - new Date(b.rawDate || b.data));
+      proj.items.sort((a, b) => parseBrDate(a.data, a.rawDate) - parseBrDate(b.data, b.rawDate));
 
       const rawTotalCentavos = proj.metrics.rawTotalCentavos != null 
         ? proj.metrics.rawTotalCentavos 
@@ -3103,10 +3132,20 @@
       });
 
       filtered.sort((a, b) => {
-        if (sortMode === 'PAGAMENTO_ASC') return new Date(a.rawDate || a.data) - new Date(b.rawDate || b.data);
-        if (sortMode === 'PAGAMENTO_DESC') return new Date(b.rawDate || b.data) - new Date(a.rawDate || a.data);
+        if (sortMode === 'PAGAMENTO_ASC') {
+          const tA = parseBrDate(a.data, a.rawDate);
+          const tB = parseBrDate(b.data, b.rawDate);
+          if (tA !== tB) return tA - tB;
+          return (a.ordem || 0) - (b.ordem || 0);
+        }
+        if (sortMode === 'PAGAMENTO_DESC') {
+          const tA = parseBrDate(a.data, a.rawDate);
+          const tB = parseBrDate(b.data, b.rawDate);
+          if (tA !== tB) return tB - tA;
+          return (b.ordem || 0) - (a.ordem || 0);
+        }
         if (sortMode === 'VALOR_DESC') return (b.valor_centavos || paraCentavos(b.valor)) - (a.valor_centavos || paraCentavos(a.valor));
-        return 0;
+        return (a.ordem || 0) - (b.ordem || 0);
       });
 
       const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
