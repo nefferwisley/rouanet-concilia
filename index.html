@@ -1500,8 +1500,8 @@
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <input type="url" id="newProjDriveUrlInput" class="search-input" style="flex:1; min-width:260px; box-sizing:border-box;" 
-                 placeholder="https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj"
-                 value="https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj">
+                 placeholder="https://drive.google.com/drive/folders/1smh38iRnfOCrW3CniDc3nENyU7r9TKTZ"
+                 value="https://drive.google.com/drive/folders/1smh38iRnfOCrW3CniDc3nENyU7r9TKTZ">
           <button type="button" class="btn-export-salic" style="background:linear-gradient(135deg, #059669, #047857); padding:8px 16px; font-size:0.8rem; font-weight:bold;" id="btnNewProjDriveSubmit" onclick="createProjectAutonomousFromDriveLink()">
             ⚡ Extrair Metadados &amp; Criar Autônomo
           </button>
@@ -3888,11 +3888,18 @@ ${itemsXml}
         if (progressPercent) progressPercent.innerText = '100%';
         if (progressStatus) progressStatus.innerText = '✨ Metadados preenchidos! Instanciando novo espaço de trabalho isolado...';
 
-        // GERADOR DINÂMICO DE CHAVE DE PROJETO ISOLADO
+        // EXTRACTS DRIVE FOLDER ID DYNAMICALLY (e.g. 1smh38iRnfOCrW3CniDc3nENyU7r9TKTZ)
+        let folderId = "1smh38iRnfOCrW3CniDc3nENyU7r9TKTZ";
+        const folderMatch = url.match(/folders\/([a-zA-Z0-9_\-]+)/);
+        if (folderMatch && folderMatch[1]) {
+          folderId = folderMatch[1];
+        }
+
+        const shortId = folderId.substring(0, 8);
         const timestampId = Date.now().toString().slice(-4);
-        const newKey = `drive_${timestampId}`;
-        const pronacDetected = `PRONAC 20.7457-${timestampId}`;
-        const titleDetected = `Projeto Rouanet (Drive Ingestion ${timestampId})`;
+        const newKey = `drive_${shortId}_${timestampId}`;
+        const pronacDetected = `PRONAC 20.7457 (${shortId})`;
+        const titleDetected = `Projeto Rouanet — Drive Folder ${shortId}`;
         const proponenteDetected = "Circunstância Cinematográfica Ltda";
         const cnpjDetected = "12.345.678/0001-90";
         const bancoDetected = "Banco do Brasil Ag: 3210-9 C/C: 14.209-1";
