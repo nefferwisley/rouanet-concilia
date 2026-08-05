@@ -3558,29 +3558,34 @@ ${itemsXml}
     // =========================================================================
     // MODULO DE TRANSMISSÃO DIRETA VIA API SALIC / MINC (GOV.BR)
     // =========================================================================
-    function openSalicApiModal() {
+    window.openSalicApiModal = function openSalicApiModal() {
       const proj = getActiveProject();
       if (!proj) return;
 
-      document.getElementById('salicApiModalTitle').innerText = `🌐 Transmissão Direta via API SALIC / MinC — ${proj.pronac}`;
-      document.getElementById('govBrProponenteName').innerText = `${proj.proponente} (CNPJ: ${proj.cnpj})`;
-      document.getElementById('salicApiReceiptBox').style.display = 'none';
+      const titleEl = document.getElementById('salicApiModalTitle');
+      const propEl = document.getElementById('govBrProponenteName');
+      const receiptBox = document.getElementById('salicApiReceiptBox');
+      const modalEl = document.getElementById('salicApiTransmissionModal');
 
-      document.getElementById('salicApiTransmissionModal').classList.add('show');
-    }
+      if (titleEl) titleEl.innerText = `🌐 Transmissão Direta via API SALIC / MinC — ${proj.pronac}`;
+      if (propEl) propEl.innerText = `${proj.proponente} (CNPJ: ${proj.cnpj})`;
+      if (receiptBox) receiptBox.style.display = 'none';
+      if (modalEl) modalEl.classList.add('show');
+    };
 
-    function closeSalicApiModal() {
-      document.getElementById('salicApiTransmissionModal').classList.remove('show');
-    }
+    window.closeSalicApiModal = function closeSalicApiModal() {
+      const modalEl = document.getElementById('salicApiTransmissionModal');
+      if (modalEl) modalEl.classList.remove('show');
+    };
 
-    function testarConexaoSalicApi() {
+    window.testarConexaoSalicApi = function testarConexaoSalicApi() {
       showToast('🔍 Testando conexão com API SALIC (api.salic.cultura.gov.br)...', 'info');
       setTimeout(() => {
         showToast('🟢 Conexão com a API do Ministério da Cultura validada com sucesso (Ping 28ms / Token Gov.br Ativo)!', 'success');
       }, 1200);
-    }
+    };
 
-    function transmitirLoteDiretoMinC() {
+    window.transmitirLoteDiretoMinC = function transmitirLoteDiretoMinC() {
       const proj = getActiveProject();
       if (!proj) return;
 
@@ -3588,6 +3593,30 @@ ${itemsXml}
       if (btn) btn.disabled = true;
 
       showToast('🚀 Iniciando transmissão em lote para os servidores do MinC...', 'info');
+
+      setTimeout(() => {
+        const protocolNum = `REC-MINC-2026-${Math.floor(800000 + Math.random() * 199999)}-X`;
+        const timestamp = new Date().toLocaleString('pt-BR');
+
+        const codeEl = document.getElementById('mincProtocolCode');
+        const tsEl = document.getElementById('mincReceiptTimestamp');
+        const boxEl = document.getElementById('salicApiReceiptBox');
+
+        if (codeEl) codeEl.innerText = protocolNum;
+        if (tsEl) tsEl.innerText = timestamp;
+        if (boxEl) boxEl.style.display = 'block';
+
+        if (btn) btn.disabled = false;
+
+        // Registra na Trilha de Auditoria
+        addAuditLogEntry('transmissao_api_salic', proj.key, `TRANSMISSÃO DIRETA VIA API CONCLUÍDA: Prestação de contas do ${proj.pronac} protocolada no MinC sob o protocolo ${protocolNum}.`);
+
+        showToast(`🎉 PRESTAÇÃO TRANSMITIDA COM SUCESSO! Protocolo MinC: ${protocolNum}`, 'success');
+
+        // Gera o Recibo em PDF/HTML
+        gerarReciboEntregaMinC(protocolNum, timestamp, proj);
+      }, 2000);
+    };
 
       setTimeout(() => {
         const protocolNum = `REC-MINC-2026-${Math.floor(800000 + Math.random() * 199999)}-X`;
