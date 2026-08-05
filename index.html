@@ -2090,12 +2090,20 @@
 
     function loadFromLocalStorage() {
       try {
-        const saved = localStorage.getItem('rouanetconcilia_db_v1');
+        const saved = localStorage.getItem('rouanetconcilia_db_v1') || localStorage.getItem('rouanetconcilia_db');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && parsed.projectsData && Object.keys(parsed.projectsData).length > 0) {
-            Object.keys(projectsData).forEach(k => delete projectsData[k]);
-            Object.assign(projectsData, parsed.projectsData);
+            // Se os dados salvos contiverem um Projeto 1961 corrompido ou com menos de 10 itens, preserva os itens oficiais
+            if (parsed.projectsData['1961'] && (!parsed.projectsData['1961'].items || parsed.projectsData['1961'].items.length < 10)) {
+              console.warn('Banco local continha dados incompletos para o Projeto 1961. Preservando lançamentos oficiais.');
+              delete parsed.projectsData['1961'];
+            }
+            Object.keys(parsed.projectsData).forEach(k => {
+              if (parsed.projectsData[k]) {
+                projectsData[k] = parsed.projectsData[k];
+              }
+            });
             if (parsed.log_auditoria && Array.isArray(parsed.log_auditoria)) {
               logAuditoriaList = parsed.log_auditoria;
             }
@@ -2106,6 +2114,14 @@
         console.error('Erro ao ler do localStorage:', err);
       }
       return false;
+    }
+
+    function resetLocalDatabase() {
+      localStorage.removeItem('rouanetconcilia_db_v1');
+      localStorage.removeItem('rouanetconcilia_db');
+      initItems1961(true);
+      switchProject('1961');
+      showToast('✓ Banco local resetado com sucesso! 184 lançamentos oficiais restaurados.', 'success');
     }
 
     async function findOrCreateDriveDatabase() {
@@ -2556,8 +2572,12 @@
     };
 
     // Popula MASSA DE DADOS DO PROJETO 1961 (184 itens)
-    (function initItems1961() {
+    function initItems1961(forceReset = false) {
       const proj = projectsData['1961'];
+      if (!proj) return;
+      if (!forceReset && proj.items && proj.items.length >= 100) return;
+
+      proj.items = [];
       const realRows1961 = [
         { prestador: "Mónica Guimarães", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 11000.00, item: "Produtora Executiva", rubrica: "1.5.1", docLink: "1. Mônica Guimarães - Produtora.pdf", confidence: 99.8, missingText: null },
         { prestador: "Amir Labaki", razao: "CIRCUNSTANCIA CINEMATOGRAF.", isHighlight: false, data: "04/11/2026", rawDate: "2026-11-04", valor: 5000.00, item: "Obras pré-existentes", rubrica: "1.2.1", docLink: "4. Amir Labaki - Roteirista.pdf", confidence: 99.5, missingText: null },
@@ -2835,7 +2855,11 @@
           });
         }
       }
-    })();
+      computeRunningBalances(proj);
+    }
+    
+    // Invocação inicial da massa de dados
+    initItems1961();
 
     let currentProjectKey = '1961';
     let currentPage = 1;
@@ -2888,8 +2912,16 @@
 
     // 1 & 3. ISOLAMENTO ESTRITO DE PROJETOS POR ABAS NO TOPO
     function switchProject(projectKey) {
-      currentProjectKey = projectKey;
+      currentProjectKey = projectKey || '1961';
       currentPage = 1;
+
+      // Garantia de auto-recuperação da massa de dados
+      let proj = getActiveProject();
+      if (!proj || (currentProjectKey === '1961' && (!proj.items || proj.items.length < 10))) {
+        console.warn('Massa de dados do Projeto 1961 vazia ou corrompida no cache. Reinicializando 184 itens...');
+        initItems1961(true);
+        proj = getActiveProject();
+      }
 
       // Alterna o estado ativo de todas as abas
       const allTabs = document.querySelectorAll('.nav-project-tab');
@@ -4710,9 +4742,14 @@ Documento gerado pelo sistema RouanetConcilia.`;
       addAuditLogEntry('sistema_iniciado', null, 'Trilha de auditoria iniciada com motor criptográfico SHA-256 (Web Crypto API).');
     }
 
+    // Carregamento síncrono imediato para renderizar a interface sem atraso
+    switchProject(currentProjectKey || '1961');
+
     // Recalcula hashes reais de todos os lançamentos via Web Crypto API no carregamento
     recomputeAllHashes().then(() => {
       switchProject(currentProjectKey || '1961');
+    }).catch(err => {
+      console.warn('Processamento assíncrono de hash finalizado com aviso:', err);
     });
   </script>
 </body>
