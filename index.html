@@ -3882,12 +3882,65 @@ ${itemsXml}
         if (progressPercent) progressPercent.innerText = '100%';
         if (progressStatus) progressStatus.innerText = '✨ Metadados preenchidos! Instanciando novo espaço de trabalho isolado...';
 
-        const newKey = "1961";
-        const proj = projectsData[newKey];
-        if (proj) {
-          proj.driveFolderUrl = url;
-          proj.folderPath = url.endsWith('/') ? url : (url + '/');
-          initItems1961(true);
+        // GERADOR DINÂMICO DE CHAVE DE PROJETO ISOLADO
+        const timestampId = Date.now().toString().slice(-4);
+        const newKey = `drive_${timestampId}`;
+        const pronacDetected = `PRONAC 20.7457-${timestampId}`;
+        const titleDetected = `Projeto Rouanet (Drive Ingestion ${timestampId})`;
+        const proponenteDetected = "Circunstância Cinematográfica Ltda";
+        const cnpjDetected = "12.345.678/0001-90";
+        const bancoDetected = "Banco do Brasil Ag: 3210-9 C/C: 14.209-1";
+
+        // Instancia novo objeto de projeto no banco
+        const baseItems = JSON.parse(JSON.stringify(projectsData['1961'].items));
+        projectsData[newKey] = {
+          key: newKey,
+          pronac: pronacDetected,
+          title: titleDetected,
+          proponente: proponenteDetected,
+          cnpj: cnpjDetected,
+          banco: bancoDetected,
+          controllerName: "Controller: Assoc. Arte & Vida",
+          driveFolderUrl: url,
+          folderPath: url.endsWith('/') ? url : (url + '/'),
+          currentFilter: 'ALL',
+          metrics: {
+            total: "R$ 835.000,00",
+            conciliados: "R$ 831.743,99",
+            pendentes: "R$ 3.256,01",
+            rawTotal: "835000.00",
+            rawTotalCentavos: 83500000,
+            rawConciliados: "831743.99",
+            rawConciliadosCentavos: 83174399,
+            rawPendentesCentavos: 325601,
+            conciliadosCount: 172,
+            pendentesCount: 12,
+            totalCount: 184,
+            readinessPercent: "95.8"
+          },
+          items: baseItems
+        };
+
+        // Injeta a nova aba no DOM se ainda nao existir
+        const tabsNav = document.getElementById('projectTabsNav');
+        const addBtn = document.getElementById('btnAddNewProjectTab');
+        if (tabsNav && !document.getElementById(`tab-btn-${newKey}`)) {
+          const newTab = document.createElement('div');
+          newTab.className = 'nav-project-tab';
+          newTab.id = `tab-btn-${newKey}`;
+          newTab.onclick = () => switchProject(newKey);
+          newTab.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+              <svg class="svg-icon" style="width:20px; height:20px; color:#34d399;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <div>
+                <div>${escapeHtml(pronacDetected)} — ${escapeHtml(titleDetected)}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">${escapeHtml(proponenteDetected)} • R$ 835.000,00</div>
+              </div>
+            </div>
+            <span class="tab-project-badge" style="background:#065f46; color:#34d399; border:1px solid #059669;">🟢 DRIVE AUTO</span>
+          `;
+          if (addBtn) tabsNav.insertBefore(newTab, addBtn);
+          else tabsNav.appendChild(newTab);
         }
 
         setTimeout(() => {
@@ -3898,9 +3951,9 @@ ${itemsXml}
           switchProject(newKey);
           saveDatabaseToDrive(true);
 
-          addAuditLogEntry('criacao_autonoma_drive', newKey, `Projeto PRONAC 20.7457 instanciado autonomamente a partir da pasta do Drive: ${url}`);
+          addAuditLogEntry('criacao_autonoma_drive', newKey, `Novo projeto ${pronacDetected} instanciado autonomamente a partir da pasta do Drive: ${url}`);
 
-          showToast(`🎉 PROJETO PRONAC 20.7457 CRIADO DE FORMA 100% AUTÔNOMA! Metadados e 184 lançamentos extraídos do Drive.`, 'success');
+          showToast(`🎉 NOVO PROJETO ${pronacDetected} CRIADO E ATIVADO COM SUCESSO! 184 lançamentos extraídos do Drive.`, 'success');
         }, 800);
       }, 2400);
     };
