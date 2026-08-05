@@ -2755,11 +2755,15 @@
           });
         }
       }
-    })();
+    }
 
     // Popula MASSA DE DADOS DO PRONAC 23-4921 (160 itens)
-    (function initItems4921() {
+    function initItems4921(forceReset = false) {
       const proj = projectsData['4921'];
+      if (!proj) return;
+      if (!forceReset && proj.items && proj.items.length >= 100) return;
+
+      proj.items = [];
       const realRows4921 = [
         { prestador: "Agência Cultural SP", razao: "AGÊNCIA CULTURAL SP LTDA", isHighlight: true, data: "18/05/2026", rawDate: "2026-05-18", valor: 35000.00, item: "Produção Teatral Agenciada", rubrica: "1.1.0", docLink: "NF-e_1029_Agencia_Cultural.xml", confidence: 91.0, missingText: "Falta: Contrato de Intermediação no SALIC" },
         { prestador: "Dra. Renata Silveira", razao: "ASSOCIAÇÃO ARTE & VIDA", isHighlight: false, data: "05/01/2026", rawDate: "2026-01-05", valor: 15000.00, item: "Direção Geral Teatro", rubrica: "1.1.1", docLink: "1_Renata_Silveira_Direcao.pdf", confidence: 99.9, missingText: null },
@@ -2882,6 +2886,7 @@
     
     // Invocação inicial da massa de dados
     initItems1961();
+    initItems4921();
 
     let currentProjectKey = '1961';
     let currentPage = 1;
