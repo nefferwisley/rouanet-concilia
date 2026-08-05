@@ -2158,8 +2158,9 @@
             // Se os dados salvos contiverem um Projeto 1961 corrompido ou com menos de 10 itens, preserva os itens oficiais
             if (parsed.projectsData['1961']) {
               const p1961 = parsed.projectsData['1961'];
-              if (!p1961.items || p1961.items.length < 10 || (p1961.items[0] && p1961.items[0].data && p1961.items[0].data.includes('2026'))) {
-                console.warn('Banco local continha ano 2026 legado do Projeto 1961. Atualizando para massa oficial 2022.');
+              const isOldRepetitive = p1961.items && p1961.items.length > 15 && p1961.items[12] && p1961.items[14] && (p1961.items[12].razao === p1961.items[14]?.razao);
+              if (!p1961.items || p1961.items.length < 10 || isOldRepetitive || (p1961.items[0] && p1961.items[0].data && p1961.items[0].data.includes('2026'))) {
+                console.warn('Banco local continha versão com fornecedores repetidos do Projeto 1961. Atualizando para massa oficial diversificada.');
                 delete parsed.projectsData['1961'];
               }
             }
@@ -2694,6 +2695,23 @@
         });
       });
 
+      const fornecedoresAudiovisualPool = [
+        { prestador: "Carlos Eduardo Silva", razao: "GRAFICA E EDITORA ALFA LTDA", item: "Divulgação & Material Gráfico", rubrica: "5.1.0" },
+        { prestador: "Mariana Souza Lima", razao: "TECH SOUND PRODUCOES LTDA", item: "Locação de Som e Luz", rubrica: "3.1.2" },
+        { prestador: "Roberto Alves", razao: "CINE CAM LOCAÇÕES DE EQUIPAMENTOS LTDA", item: "Locação de Câmeras & Maquinária", rubrica: "3.5.2" },
+        { prestador: "Marcos Antônio Dias", razao: "TRANSCULTURA LOGISTICA E TRANSPORTE LTDA", item: "Transporte de Equipamentos & Equipe", rubrica: "4.1.0" },
+        { prestador: "Cláudia Mendonça", razao: "CATERING & ALIMENTAÇÃO DE SET ME", item: "Alimentação de Equipe em Filmagens", rubrica: "4.2.0" },
+        { prestador: "Fernanda Ribeiro", razao: "HOTELARIA & HOSPEDAGEM CULTURAL LTDA", item: "Hospedagem de Equipe Técnica", rubrica: "4.3.0" },
+        { prestador: "Gabriel Castro", razao: "ESTÚDIO DE MIXAGEM & SOM DIRETO EIRELI", item: "Pós-Produção & Desenho de Som", rubrica: "3.6.3" },
+        { prestador: "Patricia Machado", razao: "DESIGN GRÁFICO & POSTERS ARTE LTDA", item: "Design Gráfico & Programação Visual", rubrica: "5.1.2" },
+        { prestador: "Renato Faria", razao: "TRADUÇÃO & LEGENDAGEM CULTURAL ME", item: "Tradução & Legendagem de Cenas", rubrica: "3.7.1" },
+        { prestador: "Camila Nogueira", razao: "ASSESSORIA DE IMPRENSA CULTURAL ME", item: "Assessoria de Imprensa & Relações Públicas", rubrica: "5.2.0" },
+        { prestador: "Lucas Vasconcelos", razao: "EDIÇÃO & COLOR GRADING PÓS LTDA", item: "Montagem & Correção de Cor", rubrica: "3.8.1" },
+        { prestador: "Vanessa Cardoso", razao: "LOCADORA DE VEÍCULOS PRODUÇÃO ME", item: "Locação de Vans e Veículos", rubrica: "4.1.2" },
+        { prestador: "Marcelo Torres", razao: "SEGUROS DE PRODUÇÃO AUDIOVISUAL LTDA", item: "Seguro de Equipamentos & Equipe", rubrica: "1.8.0" },
+        { prestador: "Helena Duarte", razao: "ASSESSORIA JURÍDICA DIREITOS AUTORAIS ME", item: "Consultoria Jurídica de Direitos", rubrica: "1.3.1" }
+      ];
+
       for (let i = 13; i <= 184; i++) {
         // Distribui as datas dos itens sintéticos entre 04/11/2022 e 28/11/2022 para respeitar a ordem cronológica real de 2022
         const progress = (i - 13) / (184 - 13);
@@ -2703,9 +2721,9 @@
         const dateDisplay = `${dayStr}/11/2022`;
         const shaShort = `b${(i + 100).toString(16)}c${(i * 3).toString(16)}`;
         const shaFull = `${shaShort}77a2e3b4a567890123456789abcdef0123456789abcdef0123456789ab`;
+        const f = fornecedoresAudiovisualPool[(i - 13) % fornecedoresAudiovisualPool.length];
 
         if (i <= 172) {
-          const isAlfa = i % 2 === 0;
           const vNum = 4424.00 + ((i % 10) * 0.10);
           proj.items.push({
             id: `TX-SHA256-${shaShort}`,
@@ -2714,15 +2732,15 @@
             sisbbProtocol: `SISBB-BB-2022-${9900000 + i}`,
             nfeChave: `352211123456780001905500100000${9900 + i}1001234567`,
             salicStatus: "HOMOLOGADO_MINC",
-            prestador: isAlfa ? "Carlos Eduardo Silva" : "Mariana Souza Lima",
-            razao: isAlfa ? "GRAFICA E EDITORA ALFA LTDA" : "TECH SOUND PRODUCOES LTDA",
+            prestador: f.prestador,
+            razao: f.razao,
             isHighlight: false,
             data: dateDisplay,
             rawDate: dateIso,
             valor: vNum.toFixed(2),
             valor_centavos: paraCentavos(vNum),
-            item: isAlfa ? "Divulgação & Material Gráfico" : "Locação de Som e Luz",
-            rubrica: isAlfa ? "5.1.0" : "3.1.2",
+            item: f.item,
+            rubrica: f.rubrica,
             confidence: parseFloat((97.5 + (i % 25) * 0.1).toFixed(1)),
             recheckStatus: "VERIFICADO_DUPLO",
             status: "CONCILIADO_OK",
