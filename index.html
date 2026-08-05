@@ -1394,8 +1394,8 @@
           </select>
 
           <select class="filter-select" id="sortSelect" onchange="currentPage=1; renderGrid();">
-            <option value="ORDEM_PLANILHA" selected>📊 Ordem da Planilha Oficial Google Sheets (Linha a Linha)</option>
-            <option value="PAGAMENTO_ASC">Ordem Cronológica (Do 1º ao Último Lançamento)</option>
+            <option value="PAGAMENTO_ASC" selected>📅 Ordem Cronológica do Extrato Bancário (1º ao Último Lançamento)</option>
+            <option value="ORDEM_PLANILHA">📊 Ordem da Planilha Oficial Google Sheets (Linha a Linha)</option>
             <option value="PAGAMENTO_DESC">Ordem Cronológica Inversa (Mais Recentes Primeiro)</option>
             <option value="VALOR_DESC">Valor (Maior ➔ Menor)</option>
           </select>
@@ -3134,25 +3134,25 @@
       });
 
       filtered.sort((a, b) => {
-        if (sortMode === 'ORDEM_PLANILHA' || !sortMode) {
-          const oA = a.ordemOriginal != null ? a.ordemOriginal : (a.ordem || 0);
-          const oB = b.ordemOriginal != null ? b.ordemOriginal : (b.ordem || 0);
-          return oA - oB;
-        }
-        if (sortMode === 'PAGAMENTO_ASC') {
+        if (sortMode === 'PAGAMENTO_ASC' || !sortMode) {
           const tA = parseBrDate(a.data, a.rawDate);
           const tB = parseBrDate(b.data, b.rawDate);
           if (tA !== tB) return tA - tB;
-          return (a.ordemOriginal || a.ordem || 0) - (b.ordemOriginal || b.ordem || 0);
+          return (a.ordem || a.ordemOriginal || 0) - (b.ordem || b.ordemOriginal || 0);
+        }
+        if (sortMode === 'ORDEM_PLANILHA') {
+          const oA = a.ordemOriginal != null ? a.ordemOriginal : (a.ordem || 0);
+          const oB = b.ordemOriginal != null ? b.ordemOriginal : (b.ordem || 0);
+          return oA - oB;
         }
         if (sortMode === 'PAGAMENTO_DESC') {
           const tA = parseBrDate(a.data, a.rawDate);
           const tB = parseBrDate(b.data, b.rawDate);
           if (tA !== tB) return tB - tA;
-          return (b.ordemOriginal || b.ordem || 0) - (a.ordemOriginal || a.ordem || 0);
+          return (b.ordem || b.ordemOriginal || 0) - (a.ordem || a.ordemOriginal || 0);
         }
         if (sortMode === 'VALOR_DESC') return (b.valor_centavos || paraCentavos(b.valor)) - (a.valor_centavos || paraCentavos(a.valor));
-        return (a.ordemOriginal || a.ordem || 0) - (b.ordemOriginal || b.ordem || 0);
+        return (a.ordem || a.ordemOriginal || 0) - (b.ordem || b.ordemOriginal || 0);
       });
 
       const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
