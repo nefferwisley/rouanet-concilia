@@ -7,22 +7,10 @@
 
   <script>
     window.onerror = function(msg, url, line, col, error) {
-      var err = "ERRO JS: " + msg + "\nLinha: " + line + "\nColuna: " + col;
-      alert(err);
-      var div = document.createElement('div');
-      div.style = "position:fixed;top:0;left:0;width:100%;background:red;color:white;z-index:999999;padding:20px;font-weight:bold;white-space:pre-wrap;";
-      div.innerText = err + (error ? "\nStack: " + error.stack : "");
-      if(document.body) document.body.appendChild(div);
-      else window.onload = function() { document.body.appendChild(div); };
+      console.error("ERRO JS:", msg, "Linha:", line, "Coluna:", col, error);
     };
     window.addEventListener('unhandledrejection', function(event) {
-      var err = "Unhandled Promise Rejection: " + (event.reason && event.reason.message ? event.reason.message : event.reason);
-      alert(err);
-      var div = document.createElement('div');
-      div.style = "position:fixed;bottom:0;left:0;width:100%;background:darkred;color:white;z-index:999999;padding:20px;font-weight:bold;white-space:pre-wrap;";
-      div.innerText = err + (event.reason && event.reason.stack ? "\nStack: " + event.reason.stack : "");
-      if(document.body) document.body.appendChild(div);
-      else window.onload = function() { document.body.appendChild(div); };
+      console.error("Unhandled Promise Rejection:", event.reason);
     });
   </script>
 
@@ -1882,6 +1870,8 @@
       </div>
     </div>
   </div>
+
+  <script>
     // =========================================================================
     // UTILITÁRIO DE SEGURANÇA — ESCAPE XSS (OWASP Regra #1)
     // Sanitiza qualquer string antes de inserir em innerHTML.
