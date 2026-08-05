@@ -3312,9 +3312,15 @@
     // RENDERIZAÇÃO DA TABELA DINÂMICA
     function renderGrid() {
       const proj = getActiveProject();
-      const docReadiness = document.getElementById('docReadinessSelect').value;
-      const sortMode = document.getElementById('sortSelect').value;
-      const query = document.getElementById('searchInput').value.toLowerCase();
+      if (!proj || !proj.items) return;
+
+      const docReadinessEl = document.getElementById('docReadinessSelect');
+      const sortSelectEl = document.getElementById('sortSelect');
+      const searchInputEl = document.getElementById('searchInput');
+
+      const docReadiness = docReadinessEl ? docReadinessEl.value : 'ALL';
+      const sortMode = sortSelectEl ? sortSelectEl.value : 'PAGAMENTO_ASC';
+      const query = searchInputEl ? searchInputEl.value.toLowerCase() : '';
 
       let filtered = proj.items.filter(item => {
         let matchesStatus = false;
@@ -3363,13 +3369,14 @@
       if (currentPage < 1) currentPage = 1;
 
       const badgeBanner = document.getElementById('conferenciaStatusBadge');
-      badgeBanner.innerText = `Exibindo ${filtered.length} de ${proj.metrics.totalCount} lançamentos (${proj.pronac})`;
+      if (badgeBanner) badgeBanner.innerText = `Exibindo ${filtered.length} de ${proj.metrics ? proj.metrics.totalCount : filtered.length} lançamentos (${proj.pronac})`;
 
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
       const pageItems = filtered.slice(startIndex, endIndex);
 
       const tbody = document.getElementById('tableBody');
+      if (!tbody) return;
       tbody.innerHTML = "";
 
       if (pageItems.length === 0) {
