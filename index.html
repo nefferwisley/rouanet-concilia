@@ -2026,6 +2026,10 @@
     const GOOGLE_API_KEY = 'AIzaSyRouanetConciliaKeyDemo2026';
     const DB_FILENAME = 'rouanetconcilia_db.json';
 
+    // IDs oficiais dos recursos no Google Drive do Projeto 1961
+    const DEFAULT_PLANILHA_1961_ID = '1q52xZirlzYCqpQJ7ldYNG9wQrVodPuJc';  // 2. Conciliação 1961.xlsx
+    const DEFAULT_PAGAMENTOS_1961_ID = '1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj'; // 1. Pagamentos
+
     let gDriveAccessToken = localStorage.getItem('gDriveAccessToken') || null;
     let gDriveFileId = localStorage.getItem('gDriveFileId') || null;
     let tokenClient = null;
@@ -2266,10 +2270,10 @@
         return;
       }
 
-      const userInput = prompt('Digite o ID ou URL da Pasta/Planilha no Google Drive:\n(Exemplo: https://drive.google.com/drive/folders/1A2b3C... ou ID da pasta)');
+      const userInput = prompt('Digite o ID ou URL da Pasta/Planilha no Google Drive:\n(Deixe em branco para carregar a pasta oficial 1. Pagamentos do Projeto 1961)', DEFAULT_PAGAMENTOS_1961_ID);
       if (!userInput) return;
 
-      let cleanId = userInput.trim();
+      let cleanId = userInput.trim() || DEFAULT_PAGAMENTOS_1961_ID;
       const folderMatch = cleanId.match(/folders\/([a-zA-Z0-9_-]+)/);
       const fileMatch = cleanId.match(/d\/([a-zA-Z0-9_-]+)/);
       if (folderMatch) cleanId = folderMatch[1];
@@ -2410,6 +2414,49 @@
       showToast(`✓ Leitura do Google Drive concluída! ${extratoItems.length} lançamentos importados do Drive.`, 'success');
     }
 
+    // =========================================================================
+    // INTEGRAÇÃO COM A API REST FASTAPI (rouanet-concilia-api)
+    // Conecta o Front-End HTML aos endpoints REST em nuvem (Render.com)
+    // =========================================================================
+    async function fetchRealDataFromFastAPI(customApiKey = null, customApiUrl = null) {
+      const apiUrl = customApiUrl || localStorage.getItem('FASTAPI_BASE_URL') || 'https://rouanet-concilia-api.onrender.com';
+      const apiKey = customApiKey || localStorage.getItem('FASTAPI_X_API_KEY') || 'rouanet-concilia-sec-2026';
+
+      showToast(`🌐 Conectando à API REST (${apiUrl})...`, 'info');
+
+      try {
+        const healthRes = await fetch(`${apiUrl}/health`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+
+        if (!healthRes.ok) {
+          throw new Error(`API Indisponível (Status: ${healthRes.status})`);
+        }
+
+        const planilhaRes = await fetch(`${apiUrl}/planilha`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+
+        if (planilhaRes.ok) {
+          const data = await planilhaRes.json();
+          if (data && data.items) {
+            const proj = getActiveProject();
+            proj.items = data.items;
+            computeRunningBalances(proj);
+            renderGrid();
+            saveDatabaseToDrive(true);
+            addAuditLogEntry('conectar_api_fastapi', proj.key, `Dados reais sincronizados da API REST (${apiUrl}/planilha).`);
+            showToast('✓ Lançamentos reais carregados com sucesso da API REST!', 'success');
+            return true;
+          }
+        }
+      } catch (err) {
+        console.warn('Conexão com FastAPI REST falhou, mantendo modo local:', err);
+        showToast(`⚠️ API REST em nuvem: ${err.message}. Modo local mantido.`, 'warning');
+      }
+      return false;
+    }
+
     // -------------------------------------------------------------------------
     // ARQUITETURA ZERO-TRUST & SINGLE SOURCE OF TRUTH (FONTE ÚNICA DA VERDADE)
     // -------------------------------------------------------------------------
@@ -2423,7 +2470,7 @@
         banco: "Banco do Brasil Ag: 3210-9 C/C: 14.209-1",
         folderPath: "01_Projetos_Isolados/PRONAC_1961_Documentario/",
         mdPath: "01_Projetos_Isolados/PRONAC_1961_Documentario/database/DATABASE_PRONAC_1961.md",
-        controllerName: "Assoc. Arte & Vida",
+        controllerName: "Júlia Sousa",
         metrics: {
           rawTotal: 835000.00,
           rawTotalCentavos: 83500000,

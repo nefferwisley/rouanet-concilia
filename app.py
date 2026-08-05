@@ -13,14 +13,16 @@ except ImportError:
 # 1. Configuração inicial da página
 st.set_page_config(page_title="Painel Offline - Drive", layout="wide", page_icon="📁")
 st.title("📁 Projeto 1961 - Leitura Exclusiva do Drive")
+st.caption("🎬 Produzido por: **Circunstância Cinematográfica Ltda** | 👤 Controller Responsável: **Júlia Sousa**")
 
-# PASSO 1: Configure o ID da sua pasta do Drive
-# Para pegar esse ID: Abra a pasta no Drive no navegador. O link será:
-# https://drive.google.com/drive/folders/ID_DA_PASTA_AQUI
+# PASSO 1: Configure o ID da sua pasta do Drive (Padrão: 1. Pagamentos do Projeto 1961)
+DEFAULT_1961_PASTA_ID = "1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj"
+DEFAULT_1961_PLANILHA_ID = "1q52xZirlzYCqpQJ7ldYNG9wQrVodPuJc"
+
 PASTA_DRIVE_ID = st.sidebar.text_input(
     "ID da Pasta do Google Drive (PASTA_DRIVE_ID):",
-    value=os.getenv("PASTA_DRIVE_ID", "COLE_AQUI_O_ID_DA_SUA_PASTA"),
-    help="Cole aqui o ID da pasta do Drive"
+    value=os.getenv("PASTA_DRIVE_ID", DEFAULT_1961_PASTA_ID),
+    help="ID da pasta do Drive contendo os comprovantes e a planilha 2. Conciliação 1961.xlsx"
 )
 
 # PASSO 2: Função para ler um arquivo do Drive usando o token do robô
