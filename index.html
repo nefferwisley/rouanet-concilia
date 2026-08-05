@@ -2608,7 +2608,7 @@
         });
       });
 
-      for (let i = 12; i <= 184; i++) {
+      for (let i = 13; i <= 184; i++) {
         const dayNum = Math.min(28, Math.floor(((i - 1) / 184) * 28) + 1);
         const dayStr = dayNum.toString().padStart(2, '0');
         const dateIso = `2026-11-${dayStr}`;
@@ -3107,7 +3107,7 @@
                         ${docNameEscaped}
                       </span>`;
             } else {
-              return `<span class="doc-pill missing" onclick="openDrawer('${escapeHtml(prestadorEscaped)}', '${escapeHtml(item.id)}', '- ${escapeHtml(valFormatted)}', '${escapeHtml(item.status)}', '${escapeHtml(guideEscaped)}', '${escapeHtml(saldoFormatted)}', '${escapeHtml(razaoEscaped)}')" title="⚠️ Documento Faltante — Clique para anexar e regularizar">
+              return `<span class="doc-pill missing" onclick="openDrawer('${escapeHtml(item.id)}')" title="⚠️ Documento Faltante — Clique para anexar e regularizar">
                         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         ${docNameEscaped}
                       </span>`;
@@ -3981,6 +3981,8 @@
           ? 'c5370549d8612ca909ea8e4fe9ede65029e4f7bef530272c9b375cc5aa41a9da' 
           : (matchedItem.fullHash || 'c5370549d8612ca909ea8e4fe9ede65029e4f7bef530272c9b375cc5aa41a9da');
 
+        const driveFolderUrl = 'https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj';
+
         const dualViewHtml = `
           <div style="width:100%; display:flex; gap:20px; flex-wrap:wrap; justify-content:center; align-items:flex-start;">
             <!-- PAINEL ESQUERDO: VALIDADOR ATIVO (MIND CHECK & REGRA AUDITORIA) -->
@@ -3990,6 +3992,7 @@
               </div>
               <div>📄 <strong>DOCUMENTO:</strong> ${escapeHtml(docName)}</div>
               <div>🔗 <strong>Original:</strong> <a href="${escapeHtml(resolvedDocUrl)}" target="_blank" style="color:#38bdf8; text-decoration:underline;">[Abrir PDF]</a></div>
+              <div>☁️ <strong>Pasta Drive:</strong> <a href="${driveFolderUrl}" target="_blank" style="color:#34d399; text-decoration:underline;">[Abrir 1. Pagamentos no Drive]</a></div>
               <div>🔐 <strong>Hash:</strong> <code style="font-size:0.7rem; color:#34d399; word-break:break-all;">${docHash.substring(0, 16)}...</code> — <span style="color:#34d399; font-weight:bold;">✅ VERIFICADO</span></div>
               <hr style="border:none; border-top:1px solid #334155; margin:2px 0;">
               <div>💰 <strong>OCR (Indexado):</strong> ${valFormatted}</div>
@@ -4044,6 +4047,10 @@
                     <tr>
                       <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Protocolo Bancário PIX:</td>
                       <td style="padding:6px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.75rem; color:#475569;">${escapeHtml(matchedItem.pixProtocol || 'E00000000202611041015A8F10F')}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Pasta Drive:</td>
+                      <td style="padding:6px; border:1px solid #cbd5e1; font-size:0.75rem;"><a href="${driveFolderUrl}" target="_blank" style="color:#0284c7; font-weight:bold; text-decoration:underline;">📂 Abrir 1. Pagamentos</a></td>
                     </tr>
                     <tr>
                       <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Hash SHA-256:</td>
