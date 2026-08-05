@@ -2568,6 +2568,7 @@
         banco: "Banco do Brasil Ag: 3210-9 C/C: 14.209-1",
         folderPath: "01_Projetos_Isolados/PRONAC_1961_Documentario/",
         mdPath: "01_Projetos_Isolados/PRONAC_1961_Documentario/database/DATABASE_PRONAC_1961.md",
+        googleSheetUrl: "https://docs.google.com/spreadsheets/d/1yZYTlPYKzpr_okC3l2vMM4J007W3GMQ9U47719g6-0s/edit?gid=1223394286#gid=1223394286",
         controllerName: "Júlia Sousa",
         metrics: {
           rawTotal: 835000.00,
@@ -2996,7 +2997,7 @@
 
       document.getElementById('projectMetaProponente').innerText = `Proponente: ${proj.proponente}`;
       document.getElementById('projectMetaBanco').innerText = proj.banco;
-      document.getElementById('projectMetaFolderPath').innerText = `Pasta: ${proj.folderPath}`;
+      document.getElementById('projectMetaFolderPath').innerHTML = `Pasta: <code>${escapeHtml(proj.folderPath)}</code> ${proj.googleSheetUrl ? `<a href="${proj.googleSheetUrl}" target="_blank" style="color:#34d399; font-weight:bold; margin-left:8px; text-decoration:underline;">[📊 Planilha Oficial Google Sheets]</a>` : ''}`;
       document.getElementById('headerControllerName').innerText = proj.controllerName;
 
       // Valores fornecidos diretamente pelo Back-End JSON (Single Source of Truth)
