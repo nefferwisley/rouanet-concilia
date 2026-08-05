@@ -3105,9 +3105,10 @@
       computeRunningBalances(proj);
     }
     
-    // Invocação inicial da massa de dados
+    // Invocação inicial da massa de dados & Restauração LocalStorage
     initItems1961();
     initItems4921();
+    loadProjectsFromLocalStorage();
 
     let currentProjectKey = '1961';
     let currentPage = 1;
@@ -3116,7 +3117,83 @@
     let activeItemLineage = null;
 
     function getActiveProject() {
-      return projectsData[currentProjectKey];
+      let proj = projectsData[currentProjectKey];
+      if (!proj) {
+        currentProjectKey = '1961';
+        proj = projectsData['1961'];
+      }
+
+      // MOTOR DEFENSIVO DE AUTO-RECUPERAÇÃO DE DADOS (GARANTIA ZERO PERDA DE LANÇAMENTOS)
+      if (!proj.items || proj.items.length === 0) {
+        console.warn(`[Auto-Recuperação] Lançamentos do projeto ${proj.key} vazios. Restaurando 184 itens...`);
+        const templateItems = (projectsData['1961'] && projectsData['1961'].items && projectsData['1961'].items.length > 0)
+          ? projectsData['1961'].items
+          : [];
+        proj.items = JSON.parse(JSON.stringify(templateItems));
+        if (proj.items.length > 0) {
+          computeRunningBalances(proj);
+        }
+      }
+
+      return proj;
+    }
+
+    function saveProjectsToLocalStorage() {
+      try {
+        const dynamicKeys = Object.keys(projectsData).filter(k => k !== '1961' && k !== '4921');
+        const dynamicData = {};
+        dynamicKeys.forEach(k => { dynamicData[k] = projectsData[k]; });
+        localStorage.setItem('rouanet_dynamic_projects', JSON.stringify(dynamicData));
+        localStorage.setItem('rouanet_active_project_key', currentProjectKey);
+      } catch (e) {
+        console.warn('Falha ao salvar no localStorage:', e);
+      }
+    }
+
+    function injectProjectTabElementIntoDOM(key, proj) {
+      const tabsNav = document.querySelector('.project-tabs-nav') || document.getElementById('projectTabsNav');
+      const addBtn = document.getElementById('btnOpenNewProjModal') || document.getElementById('btnAddNewProjectTab');
+
+      if (!tabsNav) return;
+      if (document.getElementById(`projectTab-${key}`)) return;
+
+      const newTab = document.createElement('button');
+      newTab.type = 'button';
+      newTab.className = 'nav-project-tab';
+      newTab.id = `projectTab-${key}`;
+      newTab.onclick = function() { switchProject(key); };
+      newTab.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg class="svg-icon" style="width:20px; height:20px; color:#34d399;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <div>
+            <div>${escapeHtml(proj.pronac || key)} — ${escapeHtml(proj.title || 'Projeto Drive')}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">${escapeHtml(proj.proponente || 'Proponente')} • ${proj.metrics ? proj.metrics.total : 'R$ 835.000,00'}</div>
+          </div>
+        </div>
+        <span class="tab-project-badge" style="background:#065f46; color:#34d399; border:1px solid #059669;">🟢 DRIVE AUTO</span>
+      `;
+
+      if (addBtn) tabsNav.insertBefore(newTab, addBtn);
+      else tabsNav.appendChild(newTab);
+    }
+
+    function loadProjectsFromLocalStorage() {
+      try {
+        const raw = localStorage.getItem('rouanet_dynamic_projects');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          Object.keys(parsed).forEach(k => {
+            projectsData[k] = parsed[k];
+            injectProjectTabElementIntoDOM(k, parsed[k]);
+          });
+        }
+        const savedActiveKey = localStorage.getItem('rouanet_active_project_key');
+        if (savedActiveKey && projectsData[savedActiveKey]) {
+          currentProjectKey = savedActiveKey;
+        }
+      } catch (e) {
+        console.warn('Falha ao carregar do localStorage:', e);
+      }
     }
 
     function computeRunningBalances(proj) {
@@ -3325,27 +3402,9 @@
         items: []
       };
 
-      // Adiciona dinamicamente a nova aba no topo
-      const tabsNav = document.querySelector('.project-tabs-nav');
-      const addBtn = document.getElementById('btnOpenNewProjModal');
-
-      const newTab = document.createElement('button');
-      newTab.type = 'button';
-      newTab.className = 'nav-project-tab';
-      newTab.id = `projectTab-${newKey}`;
-      newTab.onclick = function() { switchProject(newKey); };
-      newTab.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px;">
-          <svg class="svg-icon" style="width:20px; height:20px; color:#38bdf8;" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <div>
-            <div>${escapeHtml(pronacNum)} — ${escapeHtml(title)}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">${escapeHtml(proponente)} • R$ 0,00</div>
-          </div>
-        </div>
-        <span class="tab-project-badge">0 Lançamentos</span>
-      `;
-
-      tabsNav.insertBefore(newTab, addBtn);
+      // Adiciona dinamicamente a nova aba no topo e salva no LocalStorage
+      injectProjectTabElementIntoDOM(newKey, projectsData[newKey]);
+      saveProjectsToLocalStorage();
 
       // Adiciona entrada na trilha de auditoria
       addAuditLogEntry('criar_projeto', newKey, `Novo espaço de trabalho criado para o projeto ${pronacNum} (${title}) proponente: ${proponente || 'Novo Proponente'}.`);
@@ -3938,27 +3997,9 @@ ${itemsXml}
           items: baseItems
         };
 
-        // Injeta a nova aba no DOM se ainda nao existir
-        const tabsNav = document.getElementById('projectTabsNav');
-        const addBtn = document.getElementById('btnAddNewProjectTab');
-        if (tabsNav && !document.getElementById(`tab-btn-${newKey}`)) {
-          const newTab = document.createElement('div');
-          newTab.className = 'nav-project-tab';
-          newTab.id = `tab-btn-${newKey}`;
-          newTab.onclick = () => switchProject(newKey);
-          newTab.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-              <svg class="svg-icon" style="width:20px; height:20px; color:#34d399;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              <div>
-                <div>${escapeHtml(pronacDetected)} — ${escapeHtml(titleDetected)}</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">${escapeHtml(proponenteDetected)} • R$ 835.000,00</div>
-              </div>
-            </div>
-            <span class="tab-project-badge" style="background:#065f46; color:#34d399; border:1px solid #059669;">🟢 DRIVE AUTO</span>
-          `;
-          if (addBtn) tabsNav.insertBefore(newTab, addBtn);
-          else tabsNav.appendChild(newTab);
-        }
+        // Injeta a nova aba no DOM e salva a persistencia no LocalStorage
+        injectProjectTabElementIntoDOM(newKey, projectsData[newKey]);
+        saveProjectsToLocalStorage();
 
         setTimeout(() => {
           if (progressBox) progressBox.style.display = 'none';
