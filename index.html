@@ -3656,26 +3656,6 @@ ${itemsXml}
       }, 2000);
     };
 
-      setTimeout(() => {
-        const protocolNum = `REC-MINC-2026-${Math.floor(800000 + Math.random() * 199999)}-X`;
-        const timestamp = new Date().toLocaleString('pt-BR');
-
-        document.getElementById('mincProtocolCode').innerText = protocolNum;
-        document.getElementById('mincReceiptTimestamp').innerText = timestamp;
-        document.getElementById('salicApiReceiptBox').style.display = 'block';
-
-        if (btn) btn.disabled = false;
-
-        // Registra na Trilha de Auditoria
-        addAuditLogEntry('transmissao_api_salic', proj.key, `TRANSMISSÃO DIRETA VIA API CONCLUÍDA: Prestação de contas do ${proj.pronac} protocolada no MinC sob o protocolo ${protocolNum}.`);
-
-        showToast(`🎉 PRESTAÇÃO TRANSMITIDA COM SUCESSO! Protocolo MinC: ${protocolNum}`, 'success');
-
-        // Gera o Recibo em PDF/HTML
-        gerarReciboEntregaMinC(protocolNum, timestamp, proj);
-      }, 2000);
-    }
-
     function gerarReciboEntregaMinC(protocolo, timestamp, proj) {
       const htmlContent = `
         <!DOCTYPE html>
