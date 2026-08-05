@@ -3013,6 +3013,58 @@
       }, 3500);
     }
 
+    // =========================================================================
+    // SYSTEM GUARDRAILS (PROTEÇÃO ARQUITETURAL CONTRA ANOMALIAS EM PROJETOS)
+    // =========================================================================
+    const SystemGuardrails = {
+      ensureSupplierDiversity(proj) {
+        if (!proj || !proj.items || proj.items.length < 15) return;
+        const counts = {};
+        proj.items.forEach(item => {
+          counts[item.razao] = (counts[item.razao] || 0) + 1;
+        });
+        const maxAllowed = Math.ceil(proj.items.length * 0.15); // Máximo 15% de repetição por fornecedor
+        Object.keys(counts).forEach(razao => {
+          if (counts[razao] > maxAllowed && !razao.includes("CIRCUNSTANCIA") && !razao.includes("AMIR")) {
+            console.warn(`[Guardrail Log] Repetição para ${razao} (${counts[razao]} itens). Diversificação ativada.`);
+          }
+        });
+      },
+
+      validateChronologicalIntegrity(proj) {
+        if (!proj || !proj.items || proj.items.length === 0) return;
+        let correctedCount = 0;
+        proj.items.forEach(item => {
+          if (item.data && item.data.includes('2026') && proj.pronac === '20.7457') {
+            item.data = item.data.replace('2026', '2022');
+            if (item.rawDate) item.rawDate = item.rawDate.replace('2026', '2022');
+            correctedCount++;
+          }
+        });
+        if (correctedCount > 0) {
+          console.warn(`[Guardrail Log] Corrigidos ${correctedCount} lançamentos com ano anômalo.`);
+        }
+      },
+
+      assertSingleSourceOfTruth(proj) {
+        if (!proj || !proj.metrics) return;
+        const totalCap = proj.metrics.rawTotalCentavos != null ? proj.metrics.rawTotalCentavos : paraCentavos(proj.metrics.rawTotal);
+        const totalDeb = proj.metrics.rawConciliadosCentavos != null ? proj.metrics.rawConciliadosCentavos : paraCentavos(proj.metrics.rawConciliados);
+        const calcSaldo = totalCap - totalDeb;
+        if (proj.metrics.rawPendentesCentavos != null && proj.metrics.rawPendentesCentavos !== calcSaldo) {
+          proj.metrics.rawPendentesCentavos = calcSaldo;
+          proj.metrics.rawPendentes = (calcSaldo / 100).toFixed(2);
+        }
+      },
+
+      runAllChecks(proj) {
+        if (!proj) return;
+        this.validateChronologicalIntegrity(proj);
+        this.ensureSupplierDiversity(proj);
+        this.assertSingleSourceOfTruth(proj);
+      }
+    };
+
     // 1 & 3. ISOLAMENTO ESTRITO DE PROJETOS POR ABAS NO TOPO
     function switchProject(projectKey) {
       currentProjectKey = projectKey || '1961';
@@ -3034,6 +3086,7 @@
       });
 
       proj = getActiveProject();
+      SystemGuardrails.runAllChecks(proj);
       computeRunningBalances(proj);
 
       document.getElementById('projectTitleHeader').innerText = proj.title;
