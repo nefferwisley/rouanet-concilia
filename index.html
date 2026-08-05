@@ -4042,6 +4042,9 @@
           : (matchedItem.fullHash || 'c5370549d8612ca909ea8e4fe9ede65029e4f7bef530272c9b375cc5aa41a9da');
 
         const driveFolderUrl = 'https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj';
+        const targetPdfLink = (resolvedDocUrl && (resolvedDocUrl.startsWith('http://') || resolvedDocUrl.startsWith('https://'))) 
+          ? resolvedDocUrl 
+          : driveFolderUrl;
 
         const dualViewHtml = `
           <div style="width:100%; display:flex; gap:20px; flex-wrap:wrap; justify-content:center; align-items:flex-start;">
@@ -4051,7 +4054,7 @@
                 🔍 Validador Ativo (OCR 2ª Passagem)
               </div>
               <div>📄 <strong>DOCUMENTO:</strong> ${escapeHtml(docName)}</div>
-              <div>🔗 <strong>Original:</strong> <a href="${escapeHtml(resolvedDocUrl)}" target="_blank" style="color:#38bdf8; text-decoration:underline;">[Abrir PDF]</a></div>
+              <div>🔗 <strong>Original:</strong> <a href="${targetPdfLink}" target="_blank" style="color:#38bdf8; text-decoration:underline;">[Abrir na Pasta do Drive]</a></div>
               <div>☁️ <strong>Pasta Drive:</strong> <a href="${driveFolderUrl}" target="_blank" style="color:#34d399; text-decoration:underline;">[Abrir 1. Pagamentos no Drive]</a></div>
               <div>🔐 <strong>Hash:</strong> <code style="font-size:0.7rem; color:#34d399; word-break:break-all;">${docHash.substring(0, 16)}...</code> — <span style="color:#34d399; font-weight:bold;">✅ VERIFICADO</span></div>
               <hr style="border:none; border-top:1px solid #334155; margin:2px 0;">
@@ -4065,58 +4068,72 @@
               </div>
             </div>
 
-            <!-- PAINEL DIREITO: RENDERIZAÇÃO DO COMPROVANTE ORIGINAL -->
-            <div style="flex:1; min-width:320px; max-width:580px;">
-              <div class="pdf-page-paper" style="background:#fff; color:#0f172a; padding:32px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-family:sans-serif; text-align:left; position:relative;">
-                <div style="position:absolute; top:16px; right:16px; background:#dcfce7; border:1px solid #86efac; color:#166534; padding:4px 10px; border-radius:4px; font-weight:bold; font-size:0.75rem;">
-                  ✓ AUDITADO &amp; VERIFICADO
-                </div>
-                <div class="pdf-header-seal" style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:16px;">
-                  <div>
-                    <div style="font-size:0.9rem; font-weight:bold; color:#0f172a;">MINISTÉRIO DA CULTURA — SALIC / LEI ROUANET</div>
-                    <div style="font-size:0.775rem; color:#475569;">Prestação de Contas Eletrônica — <strong>${escapeHtml(proj.pronac)}</strong></div>
+            <!-- PAINEL DIREITO: VISUALIZAÇÃO DIRETA DO GOOGLE DRIVE & COMPROVANTE FISCAL -->
+            <div style="flex:1; min-width:320px; max-width:620px; display:flex; flex-direction:column; gap:12px;">
+              <!-- Seletor de Abas no Painel Direito -->
+              <div style="display:flex; gap:10px; border-bottom:1px solid #334155; padding-bottom:8px;">
+                <button class="gov-tab-btn active" id="tabDriveDirectView" onclick="switchDualRightTab('drive')">📂 Google Drive (Visualização Direta)</button>
+                <button class="gov-tab-btn" id="tabFiscalProof" onclick="switchDualRightTab('proof')">📄 Comprovante Auditado</button>
+              </div>
+
+              <!-- Conteúdo A: Visualização Direta do Google Drive (Embedded Iframe) -->
+              <div id="dualViewDriveContainer" style="width:100%; height:480px; background:#020617; border-radius:8px; overflow:hidden; border:1px solid #334155; position:relative;">
+                <iframe src="https://drive.google.com/embeddedfolderview?id=1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj#list" style="width:100%; height:100%; border:0;" title="Google Drive Viewer"></iframe>
+              </div>
+
+              <!-- Conteúdo B: Ficha do Comprovante Fiscal Auditado -->
+              <div id="dualViewProofContainer" style="display:none;">
+                <div class="pdf-page-paper" style="background:#fff; color:#0f172a; padding:28px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-family:sans-serif; text-align:left; position:relative;">
+                  <div style="position:absolute; top:16px; right:16px; background:#dcfce7; border:1px solid #86efac; color:#166534; padding:4px 10px; border-radius:4px; font-weight:bold; font-size:0.75rem;">
+                    ✓ AUDITADO &amp; VERIFICADO
                   </div>
-                </div>
+                  <div class="pdf-header-seal" style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:16px;">
+                    <div>
+                      <div style="font-size:0.9rem; font-weight:bold; color:#0f172a;">MINISTÉRIO DA CULTURA — SALIC / LEI ROUANET</div>
+                      <div style="font-size:0.775rem; color:#475569;">Prestação de Contas Eletrônica — <strong>${escapeHtml(proj.pronac)}</strong></div>
+                    </div>
+                  </div>
 
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                  <h2 style="font-size:1.1rem; color:#0f172a; border-bottom:1px solid #cbd5e1; padding-bottom:6px; margin:0;">
-                    COMPROVANTE DE PAGAMENTO PIX &amp; RECOLHIMENTO FISCAL
-                  </h2>
+                  <div style="display:flex; flex-direction:column; gap:12px;">
+                    <h2 style="font-size:1.1rem; color:#0f172a; border-bottom:1px solid #cbd5e1; padding-bottom:6px; margin:0;">
+                      COMPROVANTE DE PAGAMENTO PIX &amp; RECOLHIMENTO FISCAL
+                    </h2>
 
-                  <table style="width:100%; border-collapse:collapse; font-size:0.8rem; font-family:sans-serif; margin-top:4px;">
-                    <tr>
-                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155; width:35%;">Nome do Arquivo:</td>
-                      <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a; font-weight:600;">${escapeHtml(docName)}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Proponente / Razão Social:</td>
-                      <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a;">${escapeHtml(matchedItem.razao)}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Prestador do Serviço (PF):</td>
-                      <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a;">${escapeHtml(matchedItem.prestador)}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Rubrica Orçamentária:</td>
-                      <td style="padding:6px; border:1px solid #cbd5e1; color:#0369a1; font-weight:bold;">${escapeHtml(matchedItem.rubrica)} — ${escapeHtml(matchedItem.item)}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Valor Auditado:</td>
-                      <td style="padding:6px; border:1px solid #cbd5e1; font-weight:bold; color:#dc2626; font-size:0.95rem;">${valFormatted}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Protocolo Bancário PIX:</td>
-                      <td style="padding:6px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.75rem; color:#475569;">${escapeHtml(matchedItem.pixProtocol || 'E00000000202611041015A8F10F')}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Pasta Drive:</td>
-                      <td style="padding:6px; border:1px solid #cbd5e1; font-size:0.75rem;"><a href="${driveFolderUrl}" target="_blank" style="color:#0284c7; font-weight:bold; text-decoration:underline;">📂 Abrir 1. Pagamentos</a></td>
-                    </tr>
-                    <tr>
-                      <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Hash SHA-256:</td>
-                      <td style="padding:6px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.7rem; color:#475569; word-break:break-all;">${docHash}</td>
-                    </tr>
-                  </table>
+                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem; font-family:sans-serif; margin-top:4px;">
+                      <tr>
+                        <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155; width:35%;">Nome do Arquivo:</td>
+                        <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a; font-weight:600;">${escapeHtml(docName)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Proponente / Razão Social:</td>
+                        <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a;">${escapeHtml(matchedItem.razao)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Prestador do Serviço (PF):</td>
+                        <td style="padding:6px; border:1px solid #cbd5e1; color:#0f172a;">${escapeHtml(matchedItem.prestador)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Rubrica Orçamentária:</td>
+                        <td style="padding:6px; border:1px solid #cbd5e1; color:#0369a1; font-weight:bold;">${escapeHtml(matchedItem.rubrica)} — ${escapeHtml(matchedItem.item)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Valor Auditado:</td>
+                        <td style="padding:6px; border:1px solid #cbd5e1; font-weight:bold; color:#dc2626; font-size:0.95rem;">${valFormatted}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Protocolo Bancário PIX:</td>
+                        <td style="padding:6px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.75rem; color:#475569;">${escapeHtml(matchedItem.pixProtocol || 'E00000000202611041015A8F10F')}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Pasta Drive:</td>
+                        <td style="padding:6px; border:1px solid #cbd5e1; font-size:0.75rem;"><a href="${driveFolderUrl}" target="_blank" style="color:#0284c7; font-weight:bold; text-decoration:underline;">📂 Abrir 1. Pagamentos</a></td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px; background:#f1f5f9; border:1px solid #cbd5e1; font-weight:bold; color:#334155;">Hash SHA-256:</td>
+                        <td style="padding:6px; border:1px solid #cbd5e1; font-family:monospace; font-size:0.7rem; color:#475569; word-break:break-all;">${docHash}</td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -4144,6 +4161,25 @@
         if (danfeBtn) danfeBtn.classList.remove('active');
         if (codeArea) codeArea.style.display = 'block';
         if (danfeArea) danfeArea.style.display = 'none';
+      }
+    }
+
+    function switchDualRightTab(tab) {
+      const driveBtn = document.getElementById('tabDriveDirectView');
+      const proofBtn = document.getElementById('tabFiscalProof');
+      const driveContainer = document.getElementById('dualViewDriveContainer');
+      const proofContainer = document.getElementById('dualViewProofContainer');
+
+      if (tab === 'drive') {
+        if (driveBtn) driveBtn.classList.add('active');
+        if (proofBtn) proofBtn.classList.remove('active');
+        if (driveContainer) driveContainer.style.display = 'block';
+        if (proofContainer) proofContainer.style.display = 'none';
+      } else {
+        if (proofBtn) proofBtn.classList.add('active');
+        if (driveBtn) driveBtn.classList.remove('active');
+        if (proofContainer) proofContainer.style.display = 'block';
+        if (driveContainer) driveContainer.style.display = 'none';
       }
     }
 
@@ -4185,9 +4221,15 @@
       const docName = currentViewingDoc;
       const docUrl = currentDocMeta.docUrl || '';
 
+      const driveFolderUrl = 'https://drive.google.com/drive/folders/1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj';
+
       if (docUrl.startsWith('http://') || docUrl.startsWith('https://')) {
         window.open(docUrl, '_blank');
-        showToast(`Abrindo URL externa do documento...`, 'success');
+        showToast(`Abrindo URL do documento no Drive...`, 'success');
+        return;
+      } else {
+        window.open(driveFolderUrl, '_blank');
+        showToast(`📂 Redirecionando para a pasta oficial "1. Pagamentos" no Google Drive...`, 'info');
         return;
       }
 
@@ -4275,7 +4317,7 @@
       <ide><nNF>101</nNF><dhEmi>${item.rawDate || '2026-11-04'}</dhEmi></ide>
       <emit><CNPJ>12345678000190</CNPJ><xNome>${item.razao || 'PRESTADOR LTDA'}</xNome></emit>
       <dest><xNome>${getActiveProject().proponente}</xNome></dest>
-      <total><ICMSTot><vNF>${parseFloat(matchedItem.valor || 0).toFixed(2)}</vNF></ICMSTot></total>
+      <total><ICMSTot><vNF>${parseFloat(item.valor || 0).toFixed(2)}</vNF></ICMSTot></total>
     </infNFe>
   </NFe>
 </nfeProc>`;
@@ -4287,7 +4329,7 @@ DOCUMENTO: ${docName}
 PROJETO: ${getActiveProject().pronac}
 PRESTADOR: ${item.prestador || '-'} (${item.razao || '-'})
 RUBRICA: ${item.rubrica || '-'} — ${item.item || '-'}
-VALOR: R$ ${parseFloat(matchedItem.valor || 0).toFixed(2)}
+VALOR: R$ ${parseFloat(item.valor || 0).toFixed(2)}
 DATA: ${item.data || '-'}
 HASH SHA-256: ${item.fullHash || '-'}
 PROTOCOLO PIX: ${item.pixProtocol || '-'}
