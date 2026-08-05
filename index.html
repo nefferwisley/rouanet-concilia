@@ -3,7 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RouanetConcilia — SaaS Multi-Projetos (Arquitetura Zero-Trust & Linhagem SHA-256)</title>
+  <title>Painel de Controle e Auditoria | Lei Rouanet</title>
+
+  <script>
+    window.onerror = function(msg, url, line, col, error) {
+      var err = "ERRO JS: " + msg + "\nLinha: " + line + "\nColuna: " + col;
+      alert(err);
+      var div = document.createElement('div');
+      div.style = "position:fixed;top:0;left:0;width:100%;background:red;color:white;z-index:999999;padding:20px;font-weight:bold;white-space:pre-wrap;";
+      div.innerText = err + (error ? "\nStack: " + error.stack : "");
+      if(document.body) document.body.appendChild(div);
+      else window.onload = function() { document.body.appendChild(div); };
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      var err = "Unhandled Promise Rejection: " + (event.reason && event.reason.message ? event.reason.message : event.reason);
+      alert(err);
+      var div = document.createElement('div');
+      div.style = "position:fixed;bottom:0;left:0;width:100%;background:darkred;color:white;z-index:999999;padding:20px;font-weight:bold;white-space:pre-wrap;";
+      div.innerText = err + (event.reason && event.reason.stack ? "\nStack: " + event.reason.stack : "");
+      if(document.body) document.body.appendChild(div);
+      else window.onload = function() { document.body.appendChild(div); };
+    });
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
