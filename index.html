@@ -4305,13 +4305,28 @@ Documento gerado pelo sistema RouanetConcilia.`;
       showToast(`✓ Download concluído: ${docName}`, 'success');
     }
 
-    // Drawer Lateral
+    // Drawer Lateral com suporte a ID unico ou 7 parametros legados
     function openDrawer(prestador, txId, valor, status, customGuide, saldoRestante, razao) {
-      activeTxId = txId;
-      document.getElementById('drawerFavorecido').innerText = prestador;
-      document.getElementById('drawerRazaoSocial').innerText = razao;
-      document.getElementById('drawerTxId').innerText = 'Lançamento Extrato ' + txId;
-      document.getElementById('drawerValor').innerText = valor;
+      if (typeof prestador === 'string' && (prestador.startsWith('TX-') || !txId)) {
+        const itemId = prestador;
+        const proj = getActiveProject();
+        const item = proj && proj.items ? proj.items.find(i => i.id === itemId) : null;
+        if (item) {
+          prestador = item.prestador || item.razao || 'Prestador de Serviço';
+          txId = item.id;
+          valor = formatarReal(item.valor_centavos != null ? item.valor_centavos : paraCentavos(item.valor));
+          status = item.status;
+          customGuide = item.guide || item.missingText || 'Orientação legal para conciliação.';
+          saldoRestante = item.saldoRestanteCentavos != null ? formatarReal(item.saldoRestanteCentavos) : null;
+          razao = item.razao || item.prestador || 'Razão Social';
+        }
+      }
+
+      activeTxId = txId || prestador;
+      document.getElementById('drawerFavorecido').innerText = prestador || '-';
+      document.getElementById('drawerRazaoSocial').innerText = razao || '-';
+      document.getElementById('drawerTxId').innerText = 'Lançamento Extrato ' + (txId || '-');
+      document.getElementById('drawerValor').innerText = valor || 'R$ 0,00';
 
       if (saldoRestante) {
         document.getElementById('drawerSaldoSubtext').innerText = `Saldo do Orçamento após esta dedução: ${saldoRestante}`;
