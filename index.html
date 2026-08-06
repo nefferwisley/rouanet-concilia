@@ -2237,8 +2237,14 @@
     const DEFAULT_PLANILHA_1961_ID = '1q52xZirlzYCqpQJ7ldYNG9wQrVodPuJc';  // 2. Conciliação 1961.xlsx
     const DEFAULT_PAGAMENTOS_1961_ID = '1ydDeUQQzcTRk6QhJY_QIow1SfaJyL0Mj'; // 1. Pagamentos
 
-    let gDriveAccessToken = localStorage.getItem('gDriveAccessToken') || null;
-    let gDriveFileId = localStorage.getItem('gDriveFileId') || null;
+    let gDriveAccessToken = null;
+    let gDriveFileId = null;
+    try {
+      gDriveAccessToken = localStorage.getItem('gDriveAccessToken') || null;
+      gDriveFileId = localStorage.getItem('gDriveFileId') || null;
+    } catch (e) {
+      console.warn('Acesso ao localStorage restrito/bloqueado no navegador:', e);
+    }
     let tokenClient = null;
     let logAuditoriaList = [];
 
@@ -2320,8 +2326,10 @@
     }
 
     function resetLocalDatabase() {
-      localStorage.removeItem('rouanetconcilia_db_v1');
-      localStorage.removeItem('rouanetconcilia_db');
+      try {
+        localStorage.removeItem('rouanetconcilia_db_v1');
+        localStorage.removeItem('rouanetconcilia_db');
+      } catch(e) {}
       initItems1961(true);
       switchProject('1961');
       showToast('✓ Banco local resetado com sucesso! 184 lançamentos oficiais restaurados.', 'success');
@@ -2351,7 +2359,7 @@
         
         if (searchData.files && searchData.files.length > 0) {
           gDriveFileId = searchData.files[0].id;
-          localStorage.setItem('gDriveFileId', gDriveFileId);
+          try { localStorage.setItem('gDriveFileId', gDriveFileId); } catch(e) {}
 
           const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${gDriveFileId}?alt=media`, {
             headers: { 'Authorization': `Bearer ${gDriveAccessToken}` }
@@ -2397,7 +2405,7 @@
         if (createRes.ok) {
           const createdFile = await createRes.json();
           gDriveFileId = createdFile.id;
-          localStorage.setItem('gDriveFileId', gDriveFileId);
+          try { localStorage.setItem('gDriveFileId', gDriveFileId); } catch(e) {}
           const nowTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           updateDriveSyncStatus('success', `Salvo às ${nowTime}`);
           showToast('✓ Arquivo rouanetconcilia_db.json criado no Google Drive!', 'success');
@@ -2439,7 +2447,7 @@
           if (!silent) showToast('✓ Base de dados sincronizada no Google Drive!', 'success');
         } else {
           if (saveRes.status === 401) {
-            localStorage.removeItem('gDriveAccessToken');
+            try { localStorage.removeItem('gDriveAccessToken'); } catch(e) {}
             gDriveAccessToken = null;
             updateDriveSyncStatus('local', 'Sessão expirada — Salvo Local');
             showToast('⚠️ Sessão do Google Drive expirada. Clique no botão de status para reconectar.', 'warning');
@@ -2468,7 +2476,7 @@
           callback: (response) => {
             if (response.access_token) {
               gDriveAccessToken = response.access_token;
-              localStorage.setItem('gDriveAccessToken', gDriveAccessToken);
+              try { localStorage.setItem('gDriveAccessToken', gDriveAccessToken); } catch(e) {}
               findOrCreateDriveDatabase();
             } else {
               showToast('⚠️ Autenticação do Google Drive cancelada.', 'warning');
@@ -2669,8 +2677,14 @@
       };
     }
     async function fetchRealDataFromFastAPI(customApiKey = null, customApiUrl = null) {
-      const apiUrl = customApiUrl || localStorage.getItem('FASTAPI_BASE_URL') || 'https://rouanet-concilia-api.onrender.com';
-      const apiKey = customApiKey || localStorage.getItem('FASTAPI_X_API_KEY') || 'rouanet-concilia-sec-2026';
+      let storedUrl = null;
+      let storedKey = null;
+      try {
+        storedUrl = localStorage.getItem('FASTAPI_BASE_URL');
+        storedKey = localStorage.getItem('FASTAPI_X_API_KEY');
+      } catch(e) {}
+      const apiUrl = customApiUrl || storedUrl || 'https://rouanet-concilia-api.onrender.com';
+      const apiKey = customApiKey || storedKey || 'rouanet-concilia-sec-2026';
 
       showToast(`🌐 Conectando à API REST (${apiUrl})...`, 'info');
 
