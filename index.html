@@ -2291,6 +2291,7 @@
         localStorage.setItem('rouanetconcilia_db_v1', jsonStr);
       } catch (err) {
         console.warn('Erro ao gravar no localStorage:', err);
+        showToast('⚠️ Erro ao salvar dados localmente. Espaço insuficiente ou bloqueado.', 'warning');
       }
     }
 
@@ -2300,15 +2301,7 @@
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && parsed.projectsData && Object.keys(parsed.projectsData).length > 0) {
-            // Se os dados salvos contiverem um Projeto 1961 corrompido ou com menos de 10 itens, preserva os itens oficiais
-            if (parsed.projectsData['1961']) {
-              const p1961 = parsed.projectsData['1961'];
-              const isOldRepetitive = p1961.items && p1961.items.length > 15 && p1961.items[12] && p1961.items[14] && (p1961.items[12].razao === p1961.items[14]?.razao);
-              if (!p1961.items || p1961.items.length < 10 || isOldRepetitive || (p1961.items[0] && p1961.items[0].data && p1961.items[0].data.includes('2026'))) {
-                console.warn('Banco local continha versão com fornecedores repetidos do Projeto 1961. Atualizando para massa oficial diversificada.');
-                delete parsed.projectsData['1961'];
-              }
-            }
+            // Removido o condicional destrutivo que apagava o projeto 1961
             Object.keys(parsed.projectsData).forEach(k => {
               if (parsed.projectsData[k]) {
                 projectsData[k] = parsed.projectsData[k];
@@ -3147,6 +3140,7 @@
         localStorage.setItem('rouanet_active_project_key', currentProjectKey);
       } catch (e) {
         console.warn('Falha ao salvar no localStorage:', e);
+        showToast('⚠️ Falha ao salvar aba de projeto no cache local.', 'warning');
       }
     }
 
@@ -3519,7 +3513,7 @@
           const razaoEscaped = (item.razao || '').replace(/'/g, "\\'");
           const guideEscaped = (item.guide || '').replace(/'/g, "\\'");
 
-          const docPillsHtml = item.docs.map(d => {
+          const docPillsHtml = (item.docs || []).map(d => {
             const docUrl = d.url || `${proj.folderPath}nfe_rpa/${d.name}`;
             const docUrlEscaped = escapeHtml(docUrl);
             const docNameEscaped = escapeHtml(d.name || '');
@@ -3989,6 +3983,7 @@ ${itemsXml}
             pendentesCount: 12,
             totalCount: 184,
             readinessPercent: "95.8"
+          },
           salicAlerts: [
             "🟢 Orçamento Captado X Aprovado MinC: 100% Batido",
             "✓ Massa de dados extraída e alinhada à pasta do Google Drive",
@@ -5298,6 +5293,7 @@ Documento gerado pelo sistema RouanetConcilia.`;
         item.readiness = 'COMPLETO';
         item.confidence = 99.8;
         item.recheckStatus = "VERIFICADO_DUPLO";
+        if (!item.docs) item.docs = [];
         item.docs.forEach(d => { if (!d.ok) { d.ok = true; d.name = sanitized; } });
         item.checklist = "Completo (2/2 docs)";
         item.missingText = null;
